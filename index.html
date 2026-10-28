@@ -15,8 +15,23 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <script>
+    try { if (sessionStorage.getItem("introSeen")) document.documentElement.classList.add("intro-skip"); } catch (e) {}
+  </script>
 </head>
 <body>
+
+  <!-- ===================== INTRO CURTAIN ===================== -->
+  <div class="intro" id="intro" aria-hidden="true">
+    <div class="intro__panel intro__panel--left">
+      <img src="assets/images/corner-left.jpg" alt="">
+      <div class="intro__lights" data-lights="left"></div>
+    </div>
+    <div class="intro__panel intro__panel--right">
+      <img src="assets/images/corner-right.jpg" alt="">
+      <div class="intro__lights" data-lights="right"></div>
+    </div>
+  </div>
 
   <!-- ===================== NAV ===================== -->
   <header class="nav" id="top">

@@ -18,6 +18,88 @@ const CONFIG = {
   ],
 };
 
+/* ---------- Intro curtain + LED lights ---------- */
+(function () {
+  const intro = document.getElementById("intro");
+  if (!intro) return;
+  const skip =
+    document.documentElement.classList.contains("intro-skip") ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (skip) { intro.remove(); return; }
+
+  document.body.classList.add("is-intro");
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  // Draw sagging strings of fairy lights plus a few loose sparkles into one panel
+  function buildLights(host, side) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    svg.setAttribute("preserveAspectRatio", "none");
+    host.appendChild(svg);
+
+    const strings = [
+      { x0: -5,  y0: 4,  x1: 105, y1: 14, sag: 16, n: 11 },
+      { x0: -5,  y0: 26, x1: 105, y1: 18, sag: 14, n: 10 },
+      { x0: -5,  y0: 44, x1: 105, y1: 52, sag: 12, n: 9 },
+    ];
+    strings.forEach((s) => {
+      const pts = [];
+      const steps = 24;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = s.x0 + (s.x1 - s.x0) * t;
+        const y = s.y0 + (s.y1 - s.y0) * t + s.sag * 4 * t * (1 - t);
+        pts.push([x, y]);
+      }
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("d", "M" + pts.map((p) => p[0].toFixed(2) + " " + p[1].toFixed(2)).join(" L"));
+      svg.appendChild(path);
+
+      for (let i = 1; i < s.n; i++) {
+        const t = i / s.n;
+        const x = s.x0 + (s.x1 - s.x0) * t;
+        const y = s.y0 + (s.y1 - s.y0) * t + s.sag * 4 * t * (1 - t) + 1.2;
+        addLed(host, x, y, Math.random() < 0.3 ? "led--lg" : "");
+      }
+    });
+
+    // Loose sparkles tucked among the flowers
+    for (let i = 0; i < 16; i++) {
+      const x = side === "left" ? rand(2, 70) : rand(30, 98);
+      addLed(host, x, rand(5, 90), Math.random() < 0.6 ? "led--sm" : "");
+    }
+  }
+
+  function addLed(host, x, y, cls) {
+    const el = document.createElement("span");
+    el.className = "led " + cls;
+    el.style.left = x + "%";
+    el.style.top = y + "%";
+    el.style.setProperty("--dur", rand(1.6, 3.4).toFixed(2) + "s");
+    el.style.setProperty("--delay", (-rand(0, 3)).toFixed(2) + "s");
+    host.appendChild(el);
+  }
+
+  intro.querySelectorAll("[data-lights]").forEach((host) =>
+    buildLights(host, host.getAttribute("data-lights"))
+  );
+
+  function finish() {
+    intro.classList.add("is-done");
+    document.body.classList.remove("is-intro");
+  }
+
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      intro.classList.add("is-open");
+      try { sessionStorage.setItem("introSeen", "1"); } catch (e) {}
+      setTimeout(finish, 1700);
+    }, 1600);
+  });
+})();
+
 /* ---------- Mobile nav ---------- */
 (function () {
   const burger = document.getElementById("nav-burger");
