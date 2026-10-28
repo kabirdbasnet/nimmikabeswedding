@@ -160,6 +160,111 @@ const CONFIG = {
   }
 })();
 
+/* ---------- Falling petals ---------- */
+(function () {
+  const canvas = document.getElementById("petals");
+  if (!canvas) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const ctx = canvas.getContext("2d");
+  const hero = canvas.parentElement;
+  const PALETTE = [
+    ["#e58fb0", "#c4446f"], ["#f0a8c2", "#d0608a"], ["#d9668f", "#a8325c"],
+    ["#f4bfd0", "#e07fa3"], ["#c9496f", "#8e2a4d"], ["#f7cdd8", "#e59bb7"],
+  ];
+  let W = 0, H = 0, dpr = 1, petals = [], running = false, last = 0, raf = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = hero.clientWidth; H = hero.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const target = Math.max(14, Math.min(42, Math.round(W / 38)));
+    while (petals.length < target) petals.push(make(true));
+    petals.length = target;
+  }
+
+  function make(anywhere) {
+    const size = 8 + Math.random() * 10;
+    const c = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    return {
+      x: Math.random() * W,
+      y: anywhere ? Math.random() * H : -size * 2,
+      size,
+      vy: 18 + Math.random() * 28,              // px per second
+      drift: (Math.random() - 0.5) * 18,        // horizontal drift
+      swayAmp: 12 + Math.random() * 22,
+      swayFreq: 0.6 + Math.random() * 0.9,
+      phase: Math.random() * Math.PI * 2,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 1.6,
+      tilt: 0.45 + Math.random() * 0.5,         // flutter (fake 3D flip)
+      tiltFreq: 1 + Math.random() * 1.5,
+      alpha: 0.55 + Math.random() * 0.4,
+      light: c[0], dark: c[1],
+      t: Math.random() * 10,
+    };
+  }
+
+  function drawPetal(p) {
+    const s = p.size;
+    const flip = Math.cos(p.t * p.tiltFreq) * p.tilt + (1 - p.tilt); // 1 → thin
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.scale(1, Math.max(0.25, Math.abs(flip)));
+    ctx.globalAlpha = p.alpha;
+    const g = ctx.createLinearGradient(-s, 0, s, 0);
+    g.addColorStop(0, p.light);
+    g.addColorStop(1, p.dark);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.bezierCurveTo(s * 0.9, -s * 0.8, s * 0.95, s * 0.5, 0, s);
+    ctx.bezierCurveTo(-s * 0.95, s * 0.5, -s * 0.9, -s * 0.8, 0, -s);
+    ctx.fill();
+    // soft vein
+    ctx.globalAlpha = p.alpha * 0.35;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.7);
+    ctx.quadraticCurveTo(s * 0.12, 0, 0, s * 0.75);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function frame(now) {
+    if (!running) return;
+    const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
+    last = now;
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < petals.length; i++) {
+      const p = petals[i];
+      p.t += dt;
+      p.y += p.vy * dt;
+      p.x += (p.drift + Math.cos(p.t * p.swayFreq + p.phase) * p.swayAmp) * dt;
+      p.rot += p.rotV * dt;
+      if (p.y > H + p.size * 2 || p.x < -40 || p.x > W + 40) petals[i] = make(false);
+      drawPetal(p);
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  function start() { if (running) return; running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+  function stop() { running = false; cancelAnimationFrame(raf); }
+
+  resize();
+  window.addEventListener("resize", resize);
+  document.addEventListener("visibilitychange", () => (document.hidden ? stop() : start()));
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver((en) => (en[0].isIntersecting ? start() : stop()), { threshold: 0 }).observe(hero);
+  } else {
+    start();
+  }
+})();
+
 /* ---------- Reveal on scroll ---------- */
 (function () {
   const targets = document.querySelectorAll(

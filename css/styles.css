@@ -188,6 +188,12 @@ h3 {
   object-fit: cover; object-position: center bottom;
 }
 
+.hero__petals {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 3; pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) { .hero__petals { display: none; } }
+
 /* ---------- Weekend ---------- */
 .weekend { background: var(--cream-deep); overflow: hidden; }
 .arches {
