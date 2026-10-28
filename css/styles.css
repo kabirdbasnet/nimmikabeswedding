@@ -175,12 +175,12 @@ h3 {
 
 .hero__couple {
   position: relative; z-index: 1; margin-top: -56px;
-  width: min(100%, 1240px); margin-inline: auto;
+  width: min(100%, 1600px); margin-inline: auto;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%), linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, #000 18%), linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
   -webkit-mask-composite: source-in; mask-composite: intersect;
 }
-@media (min-width: 1241px) {
+@media (min-width: 1601px) {
   .hero__couple { -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%), linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 18%), linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%); }
 }
 .hero__couple img {
