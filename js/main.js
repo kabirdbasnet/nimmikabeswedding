@@ -31,8 +31,37 @@ const CONFIG = {
 
   function rand(a, b) { return a + Math.random() * (b - a); }
 
-  // Draw sagging strings of fairy lights plus a few loose sparkles into one panel
-  function buildLights(host, side) {
+  // Flower clusters that overlap to cover the screen, each drifting away from the centre on open
+  const BLOOMS = [
+    { img: "corner-left",  cx: 50, cy: 50, w: "76vw", h: "76vh" },
+    { img: "corner-left",  cx: 16, cy: 18, w: "72vw", h: "76vh" },
+    { img: "corner-right", cx: 84, cy: 18, w: "68vw", h: "80vh" },
+    { img: "corner-right", cx: 16, cy: 82, w: "68vw", h: "80vh", flip: true },
+    { img: "corner-left",  cx: 84, cy: 82, w: "72vw", h: "76vh", flip: true },
+    { img: "corner-right", cx: 50, cy: 6,  w: "64vw", h: "56vh", flip: true },
+    { img: "corner-left",  cx: 50, cy: 94, w: "64vw", h: "56vh" },
+    { img: "corner-right", cx: 4,  cy: 50, w: "60vw", h: "84vh" },
+    { img: "corner-right", cx: 96, cy: 50, w: "60vw", h: "84vh", flip: true },
+  ];
+  const blooms = document.getElementById("intro-blooms");
+  BLOOMS.forEach((b) => {
+    const el = document.createElement("div");
+    el.className = "intro__bloom" + (b.flip ? " intro__bloom--flip" : "");
+    el.style.setProperty("--cx", b.cx + "%");
+    el.style.setProperty("--cy", b.cy + "%");
+    el.style.setProperty("--w", b.w);
+    el.style.setProperty("--h", b.h);
+    el.style.setProperty("--dx", ((b.cx - 50) / 50).toFixed(2));
+    el.style.setProperty("--dy", ((b.cy - 50) / 50).toFixed(2));
+    const img = document.createElement("img");
+    img.src = "assets/images/" + b.img + ".jpg";
+    img.alt = "";
+    el.appendChild(img);
+    blooms.appendChild(el);
+  });
+
+  // Draw sagging strings of fairy lights plus a few loose sparkles across the screen
+  function buildLights(host) {
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("viewBox", "0 0 100 100");
@@ -40,9 +69,10 @@ const CONFIG = {
     host.appendChild(svg);
 
     const strings = [
-      { x0: -5,  y0: 4,  x1: 105, y1: 14, sag: 16, n: 11 },
-      { x0: -5,  y0: 26, x1: 105, y1: 18, sag: 14, n: 10 },
-      { x0: -5,  y0: 44, x1: 105, y1: 52, sag: 12, n: 9 },
+      { x0: -5,  y0: 4,  x1: 105, y1: 12, sag: 14, n: 18 },
+      { x0: -5,  y0: 24, x1: 105, y1: 18, sag: 12, n: 16 },
+      { x0: -5,  y0: 42, x1: 105, y1: 50, sag: 11, n: 15 },
+      { x0: -5,  y0: 68, x1: 105, y1: 62, sag: 10, n: 14 },
     ];
     strings.forEach((s) => {
       const pts = [];
@@ -66,9 +96,8 @@ const CONFIG = {
     });
 
     // Loose sparkles tucked among the flowers
-    for (let i = 0; i < 16; i++) {
-      const x = side === "left" ? rand(2, 70) : rand(30, 98);
-      addLed(host, x, rand(5, 90), Math.random() < 0.6 ? "led--sm" : "");
+    for (let i = 0; i < 34; i++) {
+      addLed(host, rand(2, 98), rand(4, 96), Math.random() < 0.6 ? "led--sm" : "");
     }
   }
 
@@ -82,9 +111,7 @@ const CONFIG = {
     host.appendChild(el);
   }
 
-  intro.querySelectorAll("[data-lights]").forEach((host) =>
-    buildLights(host, host.getAttribute("data-lights"))
-  );
+  buildLights(document.getElementById("intro-lights"));
 
   function finish() {
     intro.classList.add("is-done");
@@ -95,8 +122,8 @@ const CONFIG = {
     setTimeout(() => {
       intro.classList.add("is-open");
       try { sessionStorage.setItem("introSeen", "1"); } catch (e) {}
-      setTimeout(finish, 1700);
-    }, 1600);
+      setTimeout(finish, 3000);
+    }, 1800);
   });
 })();
 

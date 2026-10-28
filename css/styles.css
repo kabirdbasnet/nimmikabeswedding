@@ -122,33 +122,38 @@ h3 {
 
 /* ---------- Intro curtain ---------- */
 .intro {
-  position: fixed; inset: 0; z-index: 100;
-  display: flex; overflow: hidden;
+  position: fixed; inset: 0; z-index: 100; overflow: hidden;
   background: linear-gradient(180deg, #d8c3c7 0%, #e8d0c7 30%, #f3d9c3 58%, var(--peach-deep) 100%);
+  transition: opacity 1.2s ease 1.6s;
 }
 .intro-skip .intro, .intro.is-done { display: none; }
 body.is-intro { overflow: hidden; }
-.intro__panel {
-  position: relative; flex: 0 0 50%; height: 100%; overflow: hidden;
-  transition: transform 1.5s cubic-bezier(.76, 0, .24, 1);
-  will-change: transform;
+.intro__blooms { position: absolute; inset: 0; }
+
+/* Each bloom is a soft-edged flower cluster; --dx/--dy point away from the screen centre */
+.intro__bloom {
+  position: absolute; overflow: hidden;
+  left: var(--cx); top: var(--cy); width: var(--w); height: var(--h);
+  transform: translate(-50%, -50%) scale(1.04);
+  -webkit-mask-image: radial-gradient(ellipse closest-side at center, #000 62%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side at center, #000 62%, transparent 100%);
+  transition: transform 2.8s cubic-bezier(.55, 0, .7, .55), opacity 2.4s ease .5s;
+  will-change: transform, opacity;
 }
-.intro__panel img {
-  width: 100%; height: 100%; object-fit: cover;
+.intro__bloom img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.intro__bloom--flip img { transform: scaleX(-1); }
+.intro.is-open .intro__bloom {
+  transform: translate(calc(-50% + var(--dx) * 80vw), calc(-50% + var(--dy) * 80vh)) scale(1.8);
+  opacity: 0;
 }
-.intro__panel--left img { object-position: left top; }
-.intro__panel--right img { object-position: right top; }
-.intro__panel::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-}
-.intro__panel--left::after  { background: linear-gradient(to right, transparent 55%, rgba(243,231,220,.55) 100%); }
-.intro__panel--right::after { background: linear-gradient(to left,  transparent 55%, rgba(243,231,220,.55) 100%); }
-.intro.is-open .intro__panel--left  { transform: translateX(-100%); }
-.intro.is-open .intro__panel--right { transform: translateX(100%); }
-.intro.is-open { background: transparent; transition: background .6s ease .9s; }
+.intro.is-open { opacity: 0; }
 
 /* LED string lights */
-.intro__lights { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.intro__lights {
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  transition: transform 2.8s cubic-bezier(.55, 0, .7, .55), opacity 1.8s ease .3s;
+}
+.intro.is-open .intro__lights { transform: scale(1.5); opacity: 0; }
 .intro__lights svg {
   position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
 }
