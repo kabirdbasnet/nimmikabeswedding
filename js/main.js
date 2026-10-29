@@ -29,6 +29,11 @@ const CONFIG = {
      Leave empty until it's deployed. On localhost the form then runs in a preview mode that
      accepts any email and saves nothing, so you can see how it looks. */
   rsvpEndpoint: "",
+
+  // While rsvpEndpoint is empty, run the live site in preview mode too: the sign-in asks for an
+  // email, any email is accepted, and nothing is saved. Set to false (or connect the sheet)
+  // before sharing the link with guests.
+  preview: true,
 };
 
 /* ---------- Hashing helper (shared by the gate and the RSVP form) ---------- */
@@ -44,7 +49,7 @@ window.weddingHash = weddingHash;
 const INVITE_KEY = "nk_invite";
 // Running locally with no backend: any email works. Put event names in the email to try partial
 // invitations, e.g. "wedding@test.com" or "sangeet.wedding@test.com". Nothing is saved.
-const PREVIEW_MODE = !CONFIG.rsvpEndpoint && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+const PREVIEW_MODE = !CONFIG.rsvpEndpoint && (CONFIG.preview || /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
 // The site can only personalise per guest when the backend (or preview mode) is available.
 const CAN_PERSONALISE = Boolean(CONFIG.rsvpEndpoint) || PREVIEW_MODE;
 

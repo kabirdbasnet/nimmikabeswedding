@@ -40,7 +40,7 @@ Guests sign in with the password **and** the email their invitation was sent to.
 
 The guest list lives entirely in the sheet: email, name, a Y per invited event, and the party size they may RSVP for. Setup takes about ten minutes and is described in [`rsvp-backend/README.md`](rsvp-backend/README.md). Edit the sheet and the site updates the next time that guest opens it.
 
-Until `rsvpEndpoint` is filled in, the live site asks for the password only, shows all three events to everyone, and tells guests RSVPs open with the formal invitation. On localhost it runs in a preview mode instead: any email works and nothing is saved. Put event names in the email to try a partial invitation, e.g. `wedding@test.com` or `sangeet.wedding@test.com`.
+Until `rsvpEndpoint` is filled in, the site runs in **preview mode** (`preview: true` in `js/main.js`): the sign-in asks for an email, any email is accepted, and RSVPs are not saved. Put event names in the email to try a partial invitation, e.g. `wedding@test.com` or `sangeet.wedding@test.com`. Connect the sheet (or set `preview: false`) before sharing the link with guests; with `preview: false` and no sheet, the site asks for the password only and shows all three events.
 
 "Not you? Sign in with a different email" under the RSVP form signs the guest out. Visiting `/?reset` does the same and replays the flowers.
 
