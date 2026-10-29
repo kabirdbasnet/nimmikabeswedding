@@ -50,8 +50,8 @@ The pictures in `assets/images/` were cropped from the design mockup, so they ar
 
 | File | Used for |
 | --- | --- |
-| `hero-couple.jpg` | Couple by the lake at the bottom of the hero |
-| `corner-left.jpg`, `corner-right.jpg` | Bougainvillea and lanterns in the hero corners |
+| `hero-scene.jpg` | The whole hero illustration: arch, pillars, lanterns and the couple by the lake. The page text is laid over the sky, so this file must have no text in it. |
+| `corner-left.jpg`, `corner-right.jpg` | Bougainvillea and lanterns used by the opening flower curtain |
 | `arch-haldi.jpg`, `arch-sangeet.jpg`, `arch-wedding.jpg` | The three arch cards in "Our Wedding Weekend" |
 | `ev-haldi.jpg`, `ev-sangeet.jpg`, `ev-wedding.jpg` | Thumbnails in the Events list |
 | `story-couple.jpg` | "Our Story" illustration |
