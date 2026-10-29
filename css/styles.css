@@ -467,30 +467,31 @@ body.is-gated { overflow: hidden; }
 .field span em { font-style: normal; text-transform: none; letter-spacing: 0.04em; opacity: .8; }
 .rsvp__back { background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer; font-family: var(--sans); color: var(--brown-soft); margin-top: 22px; padding-left: 0; padding-right: 0; }
 
-/* ---------- RSVP: petals + hanging flower garlands ---------- */
-.rsvp { padding-top: clamp(110px, 12vw, 150px); }
+/* ---------- RSVP: petals + bougainvillea cascades (same artwork as the hero corners) ---------- */
+.rsvp { padding-top: clamp(120px, 13vw, 170px); }
 .rsvp__petals { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-.garland {
-  position: absolute; top: 0; pointer-events: none; z-index: 2;
-  width: 36px; height: clamp(260px, 34vw, 420px);
+.cascade {
+  position: absolute; top: -2px; z-index: 0; pointer-events: none; overflow: hidden;
+  width: clamp(180px, 21vw, 330px);   /* height follows the artwork so the bottom fade lands on its edge */
   transform-origin: 50% 0;
-  animation: strand-sway 5s ease-in-out infinite alternate;
-  filter: drop-shadow(0 4px 4px rgba(77, 54, 39, .18));
+  animation: cascade-sway 9s ease-in-out infinite alternate;
+  /* fade toward the centre of the page and toward the bottom so it melts into the section */
+  -webkit-mask-image: linear-gradient(to left, #000 48%, transparent 100%), linear-gradient(to top, transparent 0%, #000 24%);
+  mask-image: linear-gradient(to left, #000 48%, transparent 100%), linear-gradient(to top, transparent 0%, #000 24%);
+  -webkit-mask-composite: source-in; mask-composite: intersect;
 }
-.garland svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.garland--left.garland--outer  { left: clamp(14px, 5vw, 90px); }
-.garland--left.garland--inner  { left: clamp(54px, 9vw, 150px); height: clamp(180px, 24vw, 300px); animation-delay: -1.6s; }
-.garland--right.garland--outer { right: clamp(14px, 5vw, 90px); animation-delay: -2.5s; }
-.garland--right.garland--inner { right: clamp(54px, 9vw, 150px); height: clamp(180px, 24vw, 300px); animation-delay: -3.8s; }
-@keyframes strand-sway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
+.cascade img { display: block; width: 104%; height: auto; }   /* 104%: the outer 4% carries a frame line from the mock */
+.cascade--right { right: 0; }
+.cascade--left  { left: 0; transform: scaleX(-1); animation-name: cascade-sway-flipped; animation-delay: -4.5s; }
+@keyframes cascade-sway         { from { transform: rotate(-.7deg); }          to { transform: rotate(.7deg); } }
+@keyframes cascade-sway-flipped { from { transform: scaleX(-1) rotate(-.7deg); } to { transform: scaleX(-1) rotate(.7deg); } }
 @media (max-width: 640px) {
-  .rsvp { padding-top: 96px; }
-  .garland { width: 24px; height: 200px; }
-  .garland--left.garland--outer  { left: 2px; }
-  .garland--right.garland--outer { right: 2px; }
-  .garland--inner { display: none; }
+  .rsvp { padding-top: 110px; }
+  .cascade { width: 36vw; }
+  .rsvp__frame { background: color-mix(in srgb, var(--cream-deep) 93%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .garland { animation: none; }
+  .cascade { animation: none; }
+  .cascade--left { transform: scaleX(-1); }
   .rsvp__petals { display: none; }
 }
