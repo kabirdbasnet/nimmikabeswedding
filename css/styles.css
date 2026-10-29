@@ -438,3 +438,61 @@ body.is-intro { overflow: hidden; }
   .floral--rl { width: 30vw; }
   .floral--rr { width: 32vw; }
 }
+
+/* ---------- Password gate (sits on top of the closed flower curtain) ---------- */
+.gate {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+  background: transparent;
+  transition: opacity .5s ease, visibility .5s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gate { background: linear-gradient(180deg, #d8c3c7 0%, #e8d0c7 30%, #f3d9c3 58%, var(--peach-deep) 100%); }
+}
+.gate.is-open { opacity: 0; visibility: hidden; }
+.gate-skip .gate { display: none; }
+body.is-gated { overflow: hidden; }
+.gate__card {
+  width: min(100%, 440px); text-align: center; padding: 52px 32px 44px;
+  border: 1px solid var(--gold-soft);
+  box-shadow: 0 24px 60px rgba(77, 54, 39, .18);
+  border-radius: 50% 50% 18px 18px / 26% 26% 18px 18px;
+  background: color-mix(in srgb, var(--cream) 82%, transparent);
+  backdrop-filter: blur(6px);
+}
+.gate__names { font-family: var(--script); font-size: clamp(2.4rem, 7vw, 3.2rem); color: var(--gold); margin: 6px 0 10px; }
+.gate__hint { margin: 0 0 24px; color: var(--brown-soft); font-size: 0.95rem; }
+.gate .field { text-align: left; }
+.gate .btn { margin-top: 24px; }
+
+/* ---------- Forms ---------- */
+.field { display: block; text-align: left; margin: 0 0 22px; }
+.field span {
+  display: block; font-size: 0.64rem; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--brown-soft); margin-bottom: 6px;
+}
+.field input, .field textarea {
+  width: 100%; font: inherit; font-size: 1rem; color: var(--brown);
+  background: transparent; border: 0; border-bottom: 1px solid var(--line);
+  padding: 8px 2px; border-radius: 0; outline: none; transition: border-color .25s;
+}
+.field textarea { resize: vertical; }
+.field input:focus, .field textarea:focus { border-color: var(--gold); }
+.field input::placeholder, .field textarea::placeholder { color: color-mix(in srgb, var(--brown-soft) 55%, transparent); }
+.field--short { max-width: 220px; }
+.choices { border: 0; padding: 0; margin: 0 0 22px; text-align: left; }
+.choices legend {
+  font-size: 0.64rem; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--brown-soft); margin-bottom: 8px; padding: 0;
+}
+.choices label { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.98rem; cursor: pointer; }
+.choices input { accent-color: var(--rose); width: 16px; height: 16px; margin: 0; }
+.rsvp__form { margin-top: 32px; }
+.rsvp__form .btn { margin-top: 8px; }
+.form__msg { min-height: 1.4em; margin: 18px 0 0; font-size: 0.86rem; letter-spacing: 0.04em; color: var(--brown-soft); }
+.form__msg.is-error { color: var(--rose); }
+.form__msg.is-ok { color: var(--gold); font-weight: 400; }
+.btn:disabled { opacity: .55; cursor: wait; }
+.rsvp__greeting { margin: 0 0 26px; font-family: var(--serif); font-size: 1.25rem; line-height: 1.5; color: var(--brown); }
+.field span em { font-style: normal; text-transform: none; letter-spacing: 0.04em; opacity: .8; }
+.rsvp__back { background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer; font-family: var(--sans); color: var(--brown-soft); margin-top: 22px; padding-left: 0; padding-right: 0; }

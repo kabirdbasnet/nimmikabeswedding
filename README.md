@@ -15,14 +15,30 @@ To use a custom domain later, add it under the same Pages settings and GitHub wi
 
 | What | Where |
 | --- | --- |
-| Dates, venue, RSVP link, calendar file | `js/main.js` → the `CONFIG` block at the top |
+| Dates, venue, site password, guest emails, RSVP endpoint | `js/main.js` → the `CONFIG` block at the top |
 | All page text (hero, events, travel, FAQ) | `index.html` |
 | Colours and fonts | `css/styles.css` → the `:root` variables at the top |
 | Pictures | `assets/images/` (see below) |
 
-### RSVP button
+### Site password
 
-The RSVP button shows a "coming soon" note until you paste a link into `rsvpUrl` in `js/main.js`. A Google Form link works well.
+Guests see a password screen before the site. The password itself is never stored, only a salted hash in `sitePasswordHash` in `js/main.js`. The default password is **aura2027** — change it before sharing the link:
+
+```powershell
+.\tools\hash.ps1 "your-new-password"
+```
+
+Paste the output into `sitePasswordHash`. Guests who already signed in with the old password will be asked again.
+
+Honest note: this keeps strangers and search engines from seeing the page, but anyone technical could read the page source. It is not meant to protect secrets, just to keep the site among invited guests.
+
+### RSVP
+
+Guests enter the email their invitation was sent to. The site looks it up in your Google Sheet, greets them by name and shows only the events they're invited to (one, two or all three), each with accept / decline. Responses are saved back to the same sheet.
+
+The guest list lives entirely in the sheet: email, name, a Y per invited event, and the party size they may RSVP for. Setup takes about ten minutes and is described in [`rsvp-backend/README.md`](rsvp-backend/README.md).
+
+Until `rsvpEndpoint` is filled in, the live site tells guests RSVPs open with the formal invitation. On localhost the form runs in a preview mode instead (any email works, invited to everything, nothing saved) so you can see how it looks.
 
 ### Images
 

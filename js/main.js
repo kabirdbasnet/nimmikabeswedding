@@ -9,14 +9,88 @@ const CONFIG = {
   startDate: "2027-06-25",
   endDate: "2027-06-27",
   venue: "Aura, Bengaluru",
-  // Paste your Google Form / RSVP link here when it's ready. Leave empty until then.
-  rsvpUrl: "",
+  // The `key` of each event matches the column name in the Guests sheet (see rsvp-backend/README.md).
   events: [
-    { title: "Haldi & Mehendi", date: "2027-06-25" },
-    { title: "Sangeet",         date: "2027-06-26" },
-    { title: "Wedding Ceremony", date: "2027-06-27" },
+    { key: "haldi",   title: "Haldi & Mehendi",  date: "2027-06-25" },
+    { key: "sangeet", title: "Sangeet",          date: "2027-06-26" },
+    { key: "wedding", title: "Wedding Ceremony", date: "2027-06-27" },
   ],
+
+  /* ---- Site password ----
+     Only a salted SHA-256 hash of the password is stored here. Generate a new one with
+     tools/hash.ps1 "new-password", or in the browser console on this site: await weddingHash("new-password")
+     Default password is "aura2027" — change it before sharing the link! */
+  hashSalt: "namita-kabir-2027",
+  sitePasswordHash: "3ec5cc423f6f22f998678f98055d66ab618f5e59df28d14c55616c162e5c9b43",
+
+  /* ---- RSVP ----
+     Google Apps Script web-app URL (see rsvp-backend/README.md). The Google Sheet behind it holds
+     the guest list: who is invited, to which events, and how many guests they may bring.
+     Leave empty until it's deployed. On localhost the form then runs in a preview mode that
+     accepts any email and saves nothing, so you can see how it looks. */
+  rsvpEndpoint: "",
 };
+
+/* ---------- Hashing helper (shared by the gate and the RSVP form) ---------- */
+async function weddingHash(value) {
+  if (!window.crypto || !crypto.subtle) throw new Error("no-crypto");
+  const data = new TextEncoder().encode(CONFIG.hashSalt + String(value).trim().toLowerCase());
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+window.weddingHash = weddingHash;
+
+/* ---------- Password gate ---------- */
+(function () {
+  const gate = document.getElementById("gate");
+  if (!gate) return;
+  const form = document.getElementById("gate-form");
+  const input = document.getElementById("gate-password");
+  const msg = document.getElementById("gate-msg");
+  const KEY = "nk_access";
+
+  function unlock(remember) {
+    if (remember) { try { localStorage.setItem(KEY, CONFIG.sitePasswordHash); } catch (e) {} }
+    gate.classList.add("is-open");
+    document.body.classList.remove("is-gated");
+    setTimeout(() => gate.remove(), 700);
+    window.dispatchEvent(new Event("nk:unlocked"));
+  }
+
+  let stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored && stored === CONFIG.sitePasswordHash) {
+    gate.remove();
+    document.body.classList.remove("is-gated");
+    document.documentElement.classList.add("gate-skip");
+    return;
+  }
+
+  // Stored key is missing or stale (password changed): show the gate, with the flower curtain behind it.
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  document.documentElement.classList.remove("gate-skip");
+  document.documentElement.classList.remove("intro-skip");
+  document.body.classList.add("is-gated");
+  setTimeout(() => input && input.focus(), 50);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.textContent = "";
+    const value = input.value;
+    if (!value) return;
+    try {
+      const hash = await weddingHash(value);
+      if (hash === CONFIG.sitePasswordHash) {
+        unlock(true);
+      } else {
+        msg.textContent = "That password doesn't match. Please check your invitation.";
+        input.select();
+      }
+    } catch (err) {
+      msg.textContent = "Please open this site over https (or localhost) to sign in.";
+    }
+  });
+})();
 
 /* ---------- Intro curtain + LED lights ---------- */
 (function () {
@@ -118,13 +192,20 @@ const CONFIG = {
     document.body.classList.remove("is-intro");
   }
 
-  window.addEventListener("load", () => {
+  function play(delay) {
     setTimeout(() => {
       intro.classList.add("is-open");
       try { sessionStorage.setItem("introSeen", "1"); } catch (e) {}
       setTimeout(finish, 3000);
-    }, 1800);
-  });
+    }, delay);
+  }
+
+  // If the password gate is showing, the flowers stay closed behind it and bloom open on sign-in.
+  if (document.body.classList.contains("is-gated")) {
+    window.addEventListener("nk:unlocked", () => play(250), { once: true });
+  } else {
+    window.addEventListener("load", () => play(1800));
+  }
 })();
 
 /* ---------- Mobile nav ---------- */
@@ -248,25 +329,178 @@ const CONFIG = {
   });
 })();
 
-/* ---------- RSVP button ---------- */
+/* ---------- RSVP: look up the invitation, then reply per event ---------- */
 (function () {
-  const btn = document.getElementById("rsvp-btn");
-  const note = document.getElementById("rsvp-note");
-  if (!btn) return;
-  if (CONFIG.rsvpUrl) {
-    btn.href = CONFIG.rsvpUrl;
-    btn.target = "_blank";
-    btn.rel = "noopener";
-    if (note) note.hidden = true;
-  } else {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (note) {
-        note.textContent = "Online RSVPs open with the formal invitation. Thank you for your patience!";
-        note.style.color = "var(--rose)";
-      }
+  const lookup = document.getElementById("rsvp-lookup");
+  const form = document.getElementById("rsvp-form");
+  if (!lookup || !form) return;
+
+  const lookupMsg = document.getElementById("rsvp-lookup-msg");
+  const lookupBtn = lookup.querySelector('button[type="submit"]');
+  const msg = document.getElementById("rsvp-msg");
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const greeting = document.getElementById("rsvp-greeting");
+  const eventsHost = document.getElementById("rsvp-events");
+  const guestsField = document.getElementById("rsvp-guests-field");
+  const guestsHint = document.getElementById("rsvp-guests-hint");
+  const guestsInput = form.elements.guests;
+  const back = document.getElementById("rsvp-back");
+
+  // No endpoint yet + running locally => preview mode (any email works, nothing is saved).
+  const PREVIEW = !CONFIG.rsvpEndpoint && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const NOT_FOUND = "We couldn't find that email on our guest list. Please use the address your invitation was sent to, or get in touch with us.";
+  const FAILED = "Something went wrong. Please try again in a moment, or message us directly.";
+
+  let invite = null;
+
+  function say(el, text, kind) {
+    el.textContent = text || "";
+    el.className = "form__msg" + (kind ? " is-" + kind : "");
+  }
+  function prettyDate(ymd) {
+    return new Date(ymd + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  }
+  function listTitles(titles) {
+    if (titles.length <= 1) return titles.join("");
+    return titles.slice(0, -1).join(", ") + " and " + titles[titles.length - 1];
+  }
+
+  async function fetchInvite(email) {
+    if (PREVIEW) {
+      return { ok: true, invited: true, name: "Preview Guest", events: CONFIG.events.map((e) => e.key), maxGuests: 4, response: null };
+    }
+    const res = await fetch(CONFIG.rsvpEndpoint + "?email=" + encodeURIComponent(email), { cache: "no-store" });
+    return res.json();
+  }
+
+  function renderEvents(inv) {
+    eventsHost.innerHTML = "";
+    const prev = (inv.response && inv.response.events) || {};
+    CONFIG.events.filter((ev) => inv.events.includes(ev.key)).forEach((ev) => {
+      const fs = document.createElement("fieldset");
+      fs.className = "choices";
+      const legend = document.createElement("legend");
+      legend.textContent = ev.title + " · " + prettyDate(ev.date);
+      fs.appendChild(legend);
+      [["yes", "Joyfully accept"], ["no", "Regretfully decline"]].forEach(([val, text]) => {
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "ev_" + ev.key;
+        input.value = val;
+        input.required = true;
+        input.checked = prev[ev.key] === val;
+        label.append(input, " " + text);
+        fs.appendChild(label);
+      });
+      eventsHost.appendChild(fs);
     });
   }
+
+  function showForm(inv) {
+    const invitedEvents = CONFIG.events.filter((ev) => inv.events.includes(ev.key));
+    const hello = "Hello" + (inv.name ? ", " + inv.name : "") + "! ";
+    greeting.textContent = hello + (invitedEvents.length === CONFIG.events.length
+      ? "You're invited to all three celebrations."
+      : "You're invited to the " + listTitles(invitedEvents.map((e) => e.title)) + ".");
+
+    renderEvents(inv);
+
+    const max = Math.max(1, Number(inv.maxGuests) || 1);
+    guestsInput.max = max;
+    guestsInput.value = Math.min(max, (inv.response && inv.response.guests) || 1);
+    guestsHint.textContent = "(up to " + max + ")";
+    guestsField.hidden = max <= 1;
+
+    form.elements.dietary.value = (inv.response && inv.response.dietary) || "";
+    form.elements.message.value = (inv.response && inv.response.message) || "";
+
+    const notes = [];
+    if (inv.response) notes.push("We already have your reply. Send again to update it.");
+    if (PREVIEW) notes.push("Preview mode: nothing is saved.");
+    say(msg, notes.join(" "), inv.response ? "ok" : "");
+
+    lookup.hidden = true;
+    form.hidden = false;
+    const first = eventsHost.querySelector("input");
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  lookup.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!lookup.reportValidity()) return;
+    const email = lookup.elements.email.value.trim().toLowerCase();
+
+    if (!CONFIG.rsvpEndpoint && !PREVIEW) {
+      say(lookupMsg, "Online RSVPs open with the formal invitation — please check back soon.", "ok");
+      return;
+    }
+
+    lookupBtn.disabled = true;
+    say(lookupMsg, "Looking up your invitation…");
+    try {
+      const out = await fetchInvite(email);
+      if (!out.ok || !out.invited || !Array.isArray(out.events) || out.events.length === 0) {
+        say(lookupMsg, NOT_FOUND, "error");
+        return;
+      }
+      invite = Object.assign({ email }, out);
+      say(lookupMsg, "");
+      showForm(invite);
+    } catch (err) {
+      say(lookupMsg, FAILED, "error");
+    } finally {
+      lookupBtn.disabled = false;
+    }
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!invite || !form.reportValidity()) return;
+
+    const fd = new FormData(form);
+    const events = {};
+    invite.events.forEach((key) => { events[key] = fd.get("ev_" + key); });
+    const data = {
+      email: invite.email,
+      events,
+      guests: guestsField.hidden ? 1 : Number(fd.get("guests") || 1),
+      dietary: String(fd.get("dietary") || "").trim(),
+      message: String(fd.get("message") || "").trim(),
+    };
+
+    submitBtn.disabled = true;
+    say(msg, "Sending your RSVP…");
+    try {
+      let out = { ok: true };
+      if (!PREVIEW) {
+        const res = await fetch(CONFIG.rsvpEndpoint, { method: "POST", body: JSON.stringify(data) });
+        out = await res.json();
+      }
+      if (out.ok) {
+        invite.response = data;
+        const anyYes = Object.values(events).includes("yes");
+        say(msg, (anyYes ? "Thank you! We can't wait to celebrate with you." : "Thank you for letting us know. You'll be missed!")
+          + (PREVIEW ? " (Preview mode: nothing was saved.)" : ""), "ok");
+      } else if (out.error === "not_invited") {
+        say(msg, NOT_FOUND, "error");
+      } else {
+        say(msg, FAILED, "error");
+      }
+    } catch (err) {
+      say(msg, FAILED, "error");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  back.addEventListener("click", () => {
+    invite = null;
+    form.hidden = true;
+    lookup.hidden = false;
+    say(msg, "");
+    lookup.elements.email.focus();
+  });
 })();
 
 /* ---------- Falling petals ---------- */
