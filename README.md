@@ -34,11 +34,15 @@ Honest note: this keeps strangers and search engines from seeing the page, but a
 
 ### RSVP
 
-Guests enter the email their invitation was sent to. The site looks it up in your Google Sheet, greets them by name and shows only the events they're invited to (one, two or all three), each with accept / decline. Responses are saved back to the same sheet.
+### Per-guest invitations
 
-The guest list lives entirely in the sheet: email, name, a Y per invited event, and the party size they may RSVP for. Setup takes about ten minutes and is described in [`rsvp-backend/README.md`](rsvp-backend/README.md).
+Guests sign in with the password **and** the email their invitation was sent to. The site looks the email up in your Google Sheet and then shows that guest only the events they're invited to (one, two or all three): the weekend cards, the Events list, the dates in the hero and footer, the countdown, the FAQ answers about dates and dress code, the calendar download and the RSVP form all follow the invitation.
 
-Until `rsvpEndpoint` is filled in, the live site tells guests RSVPs open with the formal invitation. On localhost the form runs in a preview mode instead (any email works, invited to everything, nothing saved) so you can see how it looks.
+The guest list lives entirely in the sheet: email, name, a Y per invited event, and the party size they may RSVP for. Setup takes about ten minutes and is described in [`rsvp-backend/README.md`](rsvp-backend/README.md). Edit the sheet and the site updates the next time that guest opens it.
+
+Until `rsvpEndpoint` is filled in, the live site asks for the password only, shows all three events to everyone, and tells guests RSVPs open with the formal invitation. On localhost it runs in a preview mode instead: any email works and nothing is saved. Put event names in the email to try a partial invitation, e.g. `wedding@test.com` or `sangeet.wedding@test.com`.
+
+"Not you? Sign in with a different email" under the RSVP form signs the guest out. Visiting `/?reset` does the same and replays the flowers.
 
 ### Images
 

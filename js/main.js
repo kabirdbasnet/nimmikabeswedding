@@ -11,9 +11,9 @@ const CONFIG = {
   venue: "Aura, Bengaluru",
   // The `key` of each event matches the column name in the Guests sheet (see rsvp-backend/README.md).
   events: [
-    { key: "haldi",   title: "Haldi & Mehendi",  date: "2027-06-25" },
-    { key: "sangeet", title: "Sangeet",          date: "2027-06-26" },
-    { key: "wedding", title: "Wedding Ceremony", date: "2027-06-27" },
+    { key: "haldi",   title: "Haldi & Mehendi",  date: "2027-06-25", dress: "Bright, festive colours. Yellows and florals welcome." },
+    { key: "sangeet", title: "Sangeet",          date: "2027-06-26", dress: "Glamorous evening wear. Jewel tones and sparkle encouraged." },
+    { key: "wedding", title: "Wedding Ceremony", date: "2027-06-27", dress: "Traditional formal. Pastels, ivory and gold." },
   ],
 
   /* ---- Site password ----
@@ -40,17 +40,135 @@ async function weddingHash(value) {
 }
 window.weddingHash = weddingHash;
 
+/* ---------- Invitation: who is signed in and which events they're invited to ---------- */
+const INVITE_KEY = "nk_invite";
+// Running locally with no backend: any email works. Put event names in the email to try partial
+// invitations, e.g. "wedding@test.com" or "sangeet.wedding@test.com". Nothing is saved.
+const PREVIEW_MODE = !CONFIG.rsvpEndpoint && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+// The site can only personalise per guest when the backend (or preview mode) is available.
+const CAN_PERSONALISE = Boolean(CONFIG.rsvpEndpoint) || PREVIEW_MODE;
+
+window.NK_INVITE = null;
+try { window.NK_INVITE = JSON.parse(localStorage.getItem(INVITE_KEY)); } catch (e) {}
+if (!CAN_PERSONALISE || !window.NK_INVITE || !Array.isArray(window.NK_INVITE.events)) window.NK_INVITE = null;
+
+function saveInvite(inv) {
+  window.NK_INVITE = inv;
+  try { localStorage.setItem(INVITE_KEY, JSON.stringify(inv)); } catch (e) {}
+}
+
+// Ask the backend which events this email is invited to.
+async function lookupInvite(email) {
+  email = String(email).trim().toLowerCase();
+  if (PREVIEW_MODE) {
+    const local = email.split("@")[0];
+    const picked = CONFIG.events.filter((ev) => local.includes(ev.key)).map((ev) => ev.key);
+    return { ok: true, invited: true, email, name: "Preview Guest", maxGuests: 2, response: null,
+             events: picked.length ? picked : CONFIG.events.map((ev) => ev.key) };
+  }
+  const res = await fetch(CONFIG.rsvpEndpoint + "?email=" + encodeURIComponent(email), { cache: "no-store" });
+  const out = await res.json();
+  if (out && out.ok && out.invited) out.email = email;
+  return out;
+}
+
+function inviteFromLookup(out) {
+  return { email: out.email, name: out.name || "", events: out.events, maxGuests: out.maxGuests || 1, response: out.response || null };
+}
+
+// The events to show: the guest's invited ones, or all of them when nobody is signed in.
+function invitedEvents() {
+  const inv = window.NK_INVITE;
+  if (!inv) return CONFIG.events;
+  const evs = CONFIG.events.filter((ev) => inv.events.includes(ev.key));
+  return evs.length ? evs : CONFIG.events;
+}
+
+/* ---------- Date helpers ---------- */
+function shiftDate(ymd, days) {
+  const d = new Date(ymd + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function fmtDay(ymd) {
+  return new Date(ymd + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
+function dayOnly(ymd) { return String(Number(ymd.slice(8))); }
+// "June 25 – 27, 2027" for consecutive days, "June 25 & 27, 2027" otherwise, "June 27, 2027" for one.
+function dateRangeText(evs) {
+  const dates = evs.map((ev) => ev.date).sort();
+  const year = dates[0].slice(0, 4);
+  if (dates.length === 1) return fmtDay(dates[0]) + ", " + year;
+  const first = dates[0], last = dates[dates.length - 1];
+  const sameMonth = first.slice(0, 7) === last.slice(0, 7);
+  const consecutive = dates.every((d, i) => i === 0 || shiftDate(dates[i - 1], 1) === d);
+  if (consecutive) return fmtDay(first) + " – " + (sameMonth ? dayOnly(last) : fmtDay(last)) + ", " + year;
+  return dates.map((d, i) => (i === 0 || !sameMonth) ? fmtDay(d) : dayOnly(d)).join(" & ") + ", " + year;
+}
+function joinNames(items) {
+  if (items.length <= 1) return items.join("");
+  return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+}
+
+/* ---------- Personalise the page to the signed-in guest ---------- */
+function applyInvite() {
+  const evs = invitedEvents();
+  const keys = evs.map((ev) => ev.key);
+  const n = evs.length;
+  const words = ["", "One", "Two", "Three"];
+  document.documentElement.classList.toggle("is-personalised", Boolean(window.NK_INVITE));
+
+  // Anything tagged data-event="haldi|sangeet|wedding" is shown only to guests invited to it.
+  document.querySelectorAll("[data-event]").forEach((el) => {
+    el.hidden = !keys.includes(el.getAttribute("data-event"));
+  });
+  document.querySelectorAll("[data-dates]").forEach((el) => { el.textContent = dateRangeText(evs); });
+
+  const tagline = document.getElementById("hero-tagline");
+  if (tagline) tagline.innerHTML = (n === 1 ? "A day" : words[n] + " days") + " of love, culture<br>and celebration";
+
+  const lede = document.getElementById("events-lede");
+  if (lede) lede.innerHTML = n === 1
+    ? "One day. One celebration.<br>A beautiful journey."
+    : words[n] + " days. " + words[n] + " celebrations.<br>One beautiful journey.";
+
+  const faqDates = document.getElementById("faq-dates");
+  if (faqDates) {
+    const first = evs[0].date, last = evs[n - 1].date;
+    faqDates.textContent = (n === 1
+      ? "Your celebration is on " + fmtDay(first) + "."
+      : "Your celebrations begin on the morning of " + fmtDay(first) + " and wrap up on " + fmtDay(last) + ".")
+      + " We suggest arriving by " + fmtDay(shiftDate(first, -1)) + " and leaving on " + fmtDay(shiftDate(last, 1))
+      + " to enjoy everything without rushing.";
+  }
+
+  const faqWear = document.getElementById("faq-wear");
+  if (faqWear) {
+    faqWear.textContent = (n > 1 ? "Each event has its own mood. " : "")
+      + evs.map((ev) => ev.title + ": " + ev.dress).join(" ")
+      + (n > 1 ? " Dress codes are also listed under each event above." : " The dress code is also listed under the event above.");
+  }
+}
+applyInvite();
+
 /* ---------- Password gate ---------- */
 (function () {
   const gate = document.getElementById("gate");
   if (!gate) return;
   const form = document.getElementById("gate-form");
   const input = document.getElementById("gate-password");
+  const emailField = document.getElementById("gate-email-field");
+  const emailInput = document.getElementById("gate-email");
   const msg = document.getElementById("gate-msg");
+  const btn = form.querySelector('button[type="submit"]');
   const KEY = "nk_access";
 
-  function unlock(remember) {
-    if (remember) { try { localStorage.setItem(KEY, CONFIG.sitePasswordHash); } catch (e) {} }
+  function unlock() {
+    try {
+      localStorage.setItem(KEY, CONFIG.sitePasswordHash);
+      // Without a backend there is no invitation to store; keep a marker so the gate can be skipped next time.
+      if (!CAN_PERSONALISE) localStorage.setItem(INVITE_KEY, "null");
+    } catch (e) {}
     gate.classList.add("is-open");
     document.body.classList.remove("is-gated");
     setTimeout(() => gate.remove(), 700);
@@ -59,35 +177,52 @@ window.weddingHash = weddingHash;
 
   let stored = null;
   try { stored = localStorage.getItem(KEY); } catch (e) {}
-  if (stored && stored === CONFIG.sitePasswordHash) {
+  const signedIn = stored === CONFIG.sitePasswordHash && (!CAN_PERSONALISE || Boolean(window.NK_INVITE));
+  if (signedIn) {
     gate.remove();
     document.body.classList.remove("is-gated");
     document.documentElement.classList.add("gate-skip");
     return;
   }
 
-  // Stored key is missing or stale (password changed): show the gate, with the flower curtain behind it.
+  // Not signed in yet (or the password changed): show the gate with the flower curtain behind it.
   try { localStorage.removeItem(KEY); } catch (e) {}
   document.documentElement.classList.remove("gate-skip");
   document.documentElement.classList.remove("intro-skip");
   document.body.classList.add("is-gated");
-  setTimeout(() => input && input.focus(), 50);
+  if (!CAN_PERSONALISE) { emailField.hidden = true; emailInput.required = false; }
+  setTimeout(() => (CAN_PERSONALISE ? emailInput : input).focus(), 50);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (!form.reportValidity()) return;
     msg.textContent = "";
-    const value = input.value;
-    if (!value) return;
+    btn.disabled = true;
     try {
-      const hash = await weddingHash(value);
-      if (hash === CONFIG.sitePasswordHash) {
-        unlock(true);
-      } else {
+      const hash = await weddingHash(input.value);
+      if (hash !== CONFIG.sitePasswordHash) {
         msg.textContent = "That password doesn't match. Please check your invitation.";
         input.select();
+        return;
       }
+      if (CAN_PERSONALISE) {
+        msg.textContent = "Finding your invitation…";
+        const out = await lookupInvite(emailInput.value);
+        if (!out || !out.ok || !out.invited || !Array.isArray(out.events) || out.events.length === 0) {
+          msg.textContent = "We couldn't find that email on our guest list. Please use the address your invitation was sent to.";
+          emailInput.select();
+          return;
+        }
+        saveInvite(inviteFromLookup(out));
+        applyInvite();
+      }
+      unlock();
     } catch (err) {
-      msg.textContent = "Please open this site over https (or localhost) to sign in.";
+      msg.textContent = err && err.message === "no-crypto"
+        ? "Please open this site over https (or localhost) to sign in."
+        : "Something went wrong. Please try again in a moment.";
+    } finally {
+      btn.disabled = false;
     }
   });
 })();
@@ -231,7 +366,8 @@ window.weddingHash = weddingHash;
 (function () {
   const el = document.getElementById("countdown");
   if (!el) return;
-  const target = new Date(CONFIG.startDate + "T00:00:00");
+  // Counts down to the first event the guest is invited to.
+  function targetDate() { return new Date(invitedEvents()[0].date + "T00:00:00"); }
   const units = {
     days: el.querySelector('[data-unit="days"]'),
     hours: el.querySelector('[data-unit="hours"]'),
@@ -239,7 +375,7 @@ window.weddingHash = weddingHash;
     seconds: el.querySelector('[data-unit="seconds"]'),
   };
   function tick() {
-    let diff = Math.max(0, target - Date.now());
+    let diff = Math.max(0, targetDate() - Date.now());
     const d = Math.floor(diff / 864e5); diff -= d * 864e5;
     const h = Math.floor(diff / 36e5);  diff -= h * 36e5;
     const m = Math.floor(diff / 6e4);   diff -= m * 6e4;
@@ -265,6 +401,8 @@ window.weddingHash = weddingHash;
   function stamp() { return new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
 
   function buildIcs() {
+    const evs = invitedEvents();
+    const start = evs[0].date, end = evs[evs.length - 1].date;
     const lines = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
@@ -272,20 +410,20 @@ window.weddingHash = weddingHash;
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
     ];
-    // One all-day event spanning the whole weekend
-    lines.push(
+    // One all-day event spanning the guest's whole stay (skipped when they have a single event)
+    if (evs.length > 1) lines.push(
       "BEGIN:VEVENT",
-      "UID:weekend-" + icsDate(CONFIG.startDate) + "@namita-kabir",
+      "UID:weekend-" + icsDate(start) + "@namita-kabir",
       "DTSTAMP:" + stamp(),
-      "DTSTART;VALUE=DATE:" + icsDate(CONFIG.startDate),
-      "DTEND;VALUE=DATE:" + nextDay(CONFIG.endDate),
+      "DTSTART;VALUE=DATE:" + icsDate(start),
+      "DTEND;VALUE=DATE:" + nextDay(end),
       "SUMMARY:" + esc(CONFIG.coupleNames + " · Wedding Weekend"),
       "LOCATION:" + esc(CONFIG.venue),
-      "DESCRIPTION:" + esc("Three days of love, culture and celebration. " + location.href),
+      "DESCRIPTION:" + esc(evs.length + " days of love, culture and celebration. " + location.origin + location.pathname),
       "END:VEVENT"
     );
-    // Plus one per celebration
-    CONFIG.events.forEach((ev, i) => {
+    // Plus one per celebration the guest is invited to
+    evs.forEach((ev, i) => {
       lines.push(
         "BEGIN:VEVENT",
         "UID:event-" + i + "-" + icsDate(ev.date) + "@namita-kabir",
@@ -329,7 +467,7 @@ window.weddingHash = weddingHash;
   });
 })();
 
-/* ---------- RSVP: look up the invitation, then reply per event ---------- */
+/* ---------- RSVP: one answer per invited event ---------- */
 (function () {
   const lookup = document.getElementById("rsvp-lookup");
   const form = document.getElementById("rsvp-form");
@@ -346,8 +484,6 @@ window.weddingHash = weddingHash;
   const guestsInput = form.elements.guests;
   const back = document.getElementById("rsvp-back");
 
-  // No endpoint yet + running locally => preview mode (any email works, nothing is saved).
-  const PREVIEW = !CONFIG.rsvpEndpoint && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const NOT_FOUND = "We couldn't find that email on our guest list. Please use the address your invitation was sent to, or get in touch with us.";
   const FAILED = "Something went wrong. Please try again in a moment, or message us directly.";
 
@@ -357,21 +493,6 @@ window.weddingHash = weddingHash;
     el.textContent = text || "";
     el.className = "form__msg" + (kind ? " is-" + kind : "");
   }
-  function prettyDate(ymd) {
-    return new Date(ymd + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" });
-  }
-  function listTitles(titles) {
-    if (titles.length <= 1) return titles.join("");
-    return titles.slice(0, -1).join(", ") + " and " + titles[titles.length - 1];
-  }
-
-  async function fetchInvite(email) {
-    if (PREVIEW) {
-      return { ok: true, invited: true, name: "Preview Guest", events: CONFIG.events.map((e) => e.key), maxGuests: 4, response: null };
-    }
-    const res = await fetch(CONFIG.rsvpEndpoint + "?email=" + encodeURIComponent(email), { cache: "no-store" });
-    return res.json();
-  }
 
   function renderEvents(inv) {
     eventsHost.innerHTML = "";
@@ -380,7 +501,7 @@ window.weddingHash = weddingHash;
       const fs = document.createElement("fieldset");
       fs.className = "choices";
       const legend = document.createElement("legend");
-      legend.textContent = ev.title + " · " + prettyDate(ev.date);
+      legend.textContent = ev.title + " · " + fmtDay(ev.date);
       fs.appendChild(legend);
       [["yes", "Joyfully accept"], ["no", "Regretfully decline"]].forEach(([val, text]) => {
         const label = document.createElement("label");
@@ -397,12 +518,12 @@ window.weddingHash = weddingHash;
     });
   }
 
-  function showForm(inv) {
-    const invitedEvents = CONFIG.events.filter((ev) => inv.events.includes(ev.key));
+  function showForm(inv, focus) {
+    const invitedEvs = CONFIG.events.filter((ev) => inv.events.includes(ev.key));
     const hello = "Hello" + (inv.name ? ", " + inv.name : "") + "! ";
-    greeting.textContent = hello + (invitedEvents.length === CONFIG.events.length
+    greeting.textContent = hello + (invitedEvs.length === CONFIG.events.length
       ? "You're invited to all three celebrations."
-      : "You're invited to the " + listTitles(invitedEvents.map((e) => e.title)) + ".");
+      : "You're invited to the " + joinNames(invitedEvs.map((e) => e.title)) + ".");
 
     renderEvents(inv);
 
@@ -417,21 +538,24 @@ window.weddingHash = weddingHash;
 
     const notes = [];
     if (inv.response) notes.push("We already have your reply. Send again to update it.");
-    if (PREVIEW) notes.push("Preview mode: nothing is saved.");
+    if (PREVIEW_MODE) notes.push("Preview mode: nothing is saved.");
     say(msg, notes.join(" "), inv.response ? "ok" : "");
 
     lookup.hidden = true;
     form.hidden = false;
-    const first = eventsHost.querySelector("input");
-    if (first) first.focus({ preventScroll: true });
+    if (focus) {
+      const first = eventsHost.querySelector("input");
+      if (first) first.focus({ preventScroll: true });
+    }
   }
 
+  // Fallback step 1, only used when the guest somehow reached the page without signing in by email.
   lookup.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!lookup.reportValidity()) return;
     const email = lookup.elements.email.value.trim().toLowerCase();
 
-    if (!CONFIG.rsvpEndpoint && !PREVIEW) {
+    if (!CAN_PERSONALISE) {
       say(lookupMsg, "Online RSVPs open with the formal invitation — please check back soon.", "ok");
       return;
     }
@@ -439,14 +563,16 @@ window.weddingHash = weddingHash;
     lookupBtn.disabled = true;
     say(lookupMsg, "Looking up your invitation…");
     try {
-      const out = await fetchInvite(email);
-      if (!out.ok || !out.invited || !Array.isArray(out.events) || out.events.length === 0) {
+      const out = await lookupInvite(email);
+      if (!out || !out.ok || !out.invited || !Array.isArray(out.events) || out.events.length === 0) {
         say(lookupMsg, NOT_FOUND, "error");
         return;
       }
-      invite = Object.assign({ email }, out);
+      invite = inviteFromLookup(out);
+      saveInvite(invite);
+      applyInvite();
       say(lookupMsg, "");
-      showForm(invite);
+      showForm(invite, true);
     } catch (err) {
       say(lookupMsg, FAILED, "error");
     } finally {
@@ -473,15 +599,16 @@ window.weddingHash = weddingHash;
     say(msg, "Sending your RSVP…");
     try {
       let out = { ok: true };
-      if (!PREVIEW) {
+      if (!PREVIEW_MODE) {
         const res = await fetch(CONFIG.rsvpEndpoint, { method: "POST", body: JSON.stringify(data) });
         out = await res.json();
       }
       if (out.ok) {
         invite.response = data;
+        saveInvite(invite);
         const anyYes = Object.values(events).includes("yes");
         say(msg, (anyYes ? "Thank you! We can't wait to celebrate with you." : "Thank you for letting us know. You'll be missed!")
-          + (PREVIEW ? " (Preview mode: nothing was saved.)" : ""), "ok");
+          + (PREVIEW_MODE ? " (Preview mode: nothing was saved.)" : ""), "ok");
       } else if (out.error === "not_invited") {
         say(msg, NOT_FOUND, "error");
       } else {
@@ -494,13 +621,27 @@ window.weddingHash = weddingHash;
     }
   });
 
+  // "Not you?" signs the guest out and returns to the password screen.
   back.addEventListener("click", () => {
-    invite = null;
-    form.hidden = true;
-    lookup.hidden = false;
-    say(msg, "");
-    lookup.elements.email.focus();
+    try { localStorage.removeItem(INVITE_KEY); localStorage.removeItem("nk_access"); } catch (e) {}
+    location.href = location.pathname;
   });
+
+  // Signed-in guests go straight to their form; refresh it from the sheet to pick up any changes.
+  if (window.NK_INVITE) {
+    invite = window.NK_INVITE;
+    showForm(invite, false);
+    if (!PREVIEW_MODE) {
+      lookupInvite(invite.email).then((out) => {
+        if (out && out.ok && out.invited && Array.isArray(out.events) && out.events.length) {
+          invite = inviteFromLookup(out);
+          saveInvite(invite);
+          applyInvite();
+          showForm(invite, false);
+        }
+      }).catch(() => {});
+    }
+  }
 })();
 
 /* ---------- Falling petals ---------- */

@@ -36,6 +36,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 img { max-width: 100%; display: block; }
+[hidden] { display: none !important; }
 a { color: inherit; }
 h1, h2, h3 { margin: 0; font-weight: 400; }
 
@@ -258,11 +259,12 @@ body.is-intro { overflow: hidden; }
 
 /* ---------- Weekend ---------- */
 .weekend { background: var(--cream-deep); overflow: hidden; }
+/* Flex so that guests invited to one or two events still get centred cards */
 .arches {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: flex; flex-wrap: wrap; justify-content: center;
   gap: clamp(28px, 4vw, 56px); margin-bottom: clamp(44px, 6vw, 72px);
 }
-.arch { text-decoration: none; text-align: center; display: block; }
+.arch { text-decoration: none; text-align: center; display: block; flex: 1 1 0; min-width: 220px; max-width: 360px; }
 .arch__frame {
   position: relative; width: min(100%, 260px); margin: 0 auto 26px;
   aspect-ratio: 220 / 246;
@@ -390,7 +392,7 @@ body.is-intro { overflow: hidden; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
-  .arches { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .arches { gap: 20px; }
   .cards { grid-template-columns: 1fr; }
   .story__grid { grid-template-columns: 1fr; }
   .story__frame { max-width: 380px; }
@@ -422,7 +424,8 @@ body.is-intro { overflow: hidden; }
   .hero__couple img { height: 62vw; aspect-ratio: auto; }
   .countdown { gap: 16px; }
 
-  .arches { grid-template-columns: 1fr; gap: 44px; }
+  .arches { gap: 44px; }
+  .arch { flex-basis: 100%; max-width: 420px; }
   .floral--bl, .floral--br { width: 30vw; }
 
   .event__row { grid-template-columns: 1fr; gap: 0; padding: 0; }

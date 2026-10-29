@@ -20,8 +20,8 @@
     // same tab session, the flower curtain. First-time visitors always get the curtain behind the gate.
     try {
       // Visit /?reset to forget the password and replay the flowers (handy for testing).
-      if (/[?&]reset\b/.test(location.search)) { localStorage.removeItem("nk_access"); sessionStorage.removeItem("introSeen"); }
-      if (localStorage.getItem("nk_access")) {
+      if (/[?&]reset\b/.test(location.search)) { localStorage.removeItem("nk_access"); localStorage.removeItem("nk_invite"); sessionStorage.removeItem("introSeen"); }
+      if (localStorage.getItem("nk_access") && localStorage.getItem("nk_invite") !== null) {
         document.documentElement.classList.add("gate-skip");
         if (sessionStorage.getItem("introSeen")) document.documentElement.classList.add("intro-skip");
       }
@@ -36,7 +36,11 @@
       <svg class="motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
       <p class="eyebrow">You're invited</p>
       <h1 class="gate__names">Namita <span class="amp">&amp;</span> Kabir</h1>
-      <p class="gate__hint">Please enter the password from your invitation.</p>
+      <p class="gate__hint">Please sign in with the details from your invitation.</p>
+      <label class="field" id="gate-email-field">
+        <span>Email your invitation was sent to</span>
+        <input type="email" id="gate-email" name="email" autocomplete="email" required>
+      </label>
       <label class="field">
         <span>Password</span>
         <input type="password" id="gate-password" name="password" autocomplete="current-password" required>
@@ -88,12 +92,12 @@
       <div class="hero__content">
         <p class="eyebrow">Save the Date</p>
         <h1 class="hero__names">Namita <span class="amp">&amp;</span> Kabir</h1>
-        <p class="hero__date">June 25 – 27, 2027</p>
+        <p class="hero__date" data-dates>June 25 – 27, 2027</p>
         <p class="hero__venue">Aura, Bengaluru</p>
         <div class="ornament" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="18" height="18"><use href="#motif"/></svg>
         </div>
-        <p class="hero__tagline">Three days of love, culture<br>and celebration</p>
+        <p class="hero__tagline" id="hero-tagline">Three days of love, culture<br>and celebration</p>
 
         <div class="countdown" id="countdown" aria-label="Countdown to the wedding">
           <div><b data-unit="days">—</b><span>Days</span></div>
@@ -124,19 +128,19 @@
         </div>
 
         <div class="arches">
-          <a class="arch" href="#events">
+          <a class="arch" href="#events" data-event="haldi">
             <div class="arch__frame"><img src="assets/images/arch-haldi.jpg" alt="Haldi and Mehendi setting with marigold garlands by the lake"></div>
             <p class="arch__date">June 25</p>
             <h3 class="arch__title">Haldi &amp; Mehendi</h3>
             <p class="arch__desc">A day of colour, laughter and new beginnings.</p>
           </a>
-          <a class="arch" href="#events">
+          <a class="arch" href="#events" data-event="sangeet">
             <div class="arch__frame"><img src="assets/images/arch-sangeet.jpg" alt="Sangeet lounge under strings of lights"></div>
             <p class="arch__date">June 26</p>
             <h3 class="arch__title">Sangeet</h3>
             <p class="arch__desc">An evening of music, dance and celebration under the stars.</p>
           </a>
-          <a class="arch" href="#events">
+          <a class="arch" href="#events" data-event="wedding">
             <div class="arch__frame"><img src="assets/images/arch-wedding.jpg" alt="Wedding mandap with white floral garlands"></div>
             <p class="arch__date">June 27</p>
             <h3 class="arch__title">Wedding Ceremony</h3>
@@ -189,11 +193,11 @@
         <div class="section__head">
           <svg class="motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
           <h2>Events</h2>
-          <p class="lede">Three days. Three celebrations.<br>One beautiful journey.</p>
+          <p class="lede" id="events-lede">Three days. Three celebrations.<br>One beautiful journey.</p>
         </div>
 
         <div class="event-list">
-          <article class="event">
+          <article class="event" data-event="haldi">
             <button class="event__row" type="button" aria-expanded="false" aria-controls="ev-1">
               <img class="event__img" src="assets/images/ev-haldi.jpg" alt="">
               <div class="event__meta">
@@ -212,7 +216,7 @@
             </div>
           </article>
 
-          <article class="event">
+          <article class="event" data-event="sangeet">
             <button class="event__row" type="button" aria-expanded="false" aria-controls="ev-2">
               <img class="event__img" src="assets/images/ev-sangeet.jpg" alt="">
               <div class="event__meta">
@@ -231,7 +235,7 @@
             </div>
           </article>
 
-          <article class="event">
+          <article class="event" data-event="wedding">
             <button class="event__row" type="button" aria-expanded="false" aria-controls="ev-3">
               <img class="event__img" src="assets/images/ev-wedding.jpg" alt="">
               <div class="event__meta">
@@ -295,11 +299,11 @@
         <div class="faq-list">
           <details>
             <summary>When should I arrive and leave?</summary>
-            <p>Celebrations begin on the morning of June 25 and wrap up after the wedding on June 27. We suggest arriving by June 24 and leaving on June 28 to enjoy everything without rushing.</p>
+            <p id="faq-dates">Celebrations begin on the morning of June 25 and wrap up after the wedding on June 27. We suggest arriving by June 24 and leaving on June 28 to enjoy everything without rushing.</p>
           </details>
           <details>
             <summary>What should I wear?</summary>
-            <p>Each event has its own mood. Bright festive colours for Haldi &amp; Mehendi, glamorous evening wear for the Sangeet, and traditional formal for the wedding. Dress codes are listed under each event above.</p>
+            <p id="faq-wear">Each event has its own mood. Bright festive colours for Haldi &amp; Mehendi, glamorous evening wear for the Sangeet, and traditional formal for the wedding. Dress codes are listed under each event above.</p>
           </details>
           <details>
             <summary>Can I bring a plus one?</summary>
@@ -360,7 +364,7 @@
 
           <button class="btn btn--outline btn--lg" type="submit">Send RSVP <span class="arrow">→</span></button>
           <p class="form__msg" id="rsvp-msg" aria-live="polite"></p>
-          <button class="textlink rsvp__back" id="rsvp-back" type="button">Not you? Use a different email</button>
+          <button class="textlink rsvp__back" id="rsvp-back" type="button">Not you? Sign in with a different email</button>
         </form>
       </div>
     </section>
@@ -369,7 +373,7 @@
 
   <footer class="footer">
     <p class="footer__names">Namita <span class="amp">&amp;</span> Kabir</p>
-    <p>June 25 – 27, 2027 · Aura, Bengaluru</p>
+    <p><span data-dates>June 25 – 27, 2027</span> · Aura, Bengaluru</p>
     <p class="footer__small">Made with love. <a href="#top">Back to top ↑</a></p>
   </footer>
 

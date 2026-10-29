@@ -43,6 +43,7 @@ Paste the URL into `rsvpEndpoint` in `js/main.js`. Done.
 
 ## What guests see
 
-1. They enter their email. If it isn't on the Guests tab they're told to check the address or contact you.
-2. They're greeted by name and shown only the events they're invited to, each with "Joyfully accept" or "Regretfully decline".
-3. They send. You see it in the sheet within seconds.
+1. On the password screen they also enter their email. If it isn't on the Guests tab they're told to check the address.
+2. The whole site is tailored to them: only their events appear in the weekend cards, Events list, dates, FAQ and calendar download.
+3. The RSVP section greets them by name with one "Joyfully accept" / "Regretfully decline" per invited event.
+4. They send. You see it in the sheet within seconds. If they come back, their previous answers are pre-filled.
