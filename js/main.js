@@ -649,8 +649,8 @@ const ROSE_PETALS = [
   ["#e58fb0", "#c4446f"], ["#f0a8c2", "#d0608a"], ["#d9668f", "#a8325c"],
   ["#f4bfd0", "#e07fa3"], ["#c9496f", "#8e2a4d"], ["#f7cdd8", "#e59bb7"],
 ];
-const MARIGOLD_PETALS = [
-  ["#ffc46b", "#e8731a"], ["#ffe08a", "#f0a62b"], ["#ff9f45", "#d85f12"],
+const RED_PETALS = [
+  ["#d9506d", "#8e1f3a"], ["#c43a55", "#6e1428"],
 ];
 
 function startPetals(canvas, PALETTE) {
@@ -752,9 +752,9 @@ function startPetals(canvas, PALETTE) {
   }
 }
 startPetals(document.getElementById("petals"), ROSE_PETALS);
-startPetals(document.getElementById("rsvp-petals"), ROSE_PETALS.concat(MARIGOLD_PETALS));
+startPetals(document.getElementById("rsvp-petals"), ROSE_PETALS.concat(RED_PETALS));
 
-/* ---------- Marigold garlands (torans) drawn as SVG ---------- */
+/* ---------- Hanging flower garlands drawn as SVG ---------- */
 (function () {
   const hosts = document.querySelectorAll("[data-garland]");
   if (!hosts.length) return;
@@ -772,10 +772,11 @@ startPetals(document.getElementById("rsvp-petals"), ROSE_PETALS.concat(MARIGOLD_
 
   function defs(svg, id) {
     const d = el("defs", {}, svg);
+    // Red and pink to match the site's rose palette, with soft sage leaves
     const grads = {
-      orange: ["#ffd27a", "#f08a1d", "#b8500a"],
-      yellow: ["#fff3b0", "#f7c948", "#d08a14"],
-      leaf:   ["#7ab35a", "#3d7a33", "#1f4a1c"],
+      red:  ["#e8788f", "#c43a55", "#7e1f36"],
+      pink: ["#fbd3df", "#ec9bb7", "#c45d82"],
+      leaf: ["#b7c99a", "#7f9a66", "#4f6a3f"],
     };
     Object.keys(grads).forEach((k) => {
       const g = el("radialGradient", { id: id + "-" + k, cx: "35%", cy: "35%", r: "70%" }, d);
@@ -794,7 +795,7 @@ startPetals(document.getElementById("rsvp-petals"), ROSE_PETALS.concat(MARIGOLD_
       el("circle", { cx: f(Math.cos(a) * r * 0.62), cy: f(Math.sin(a) * r * 0.62), r: f(r * 0.5), fill }, g);
     }
     el("circle", { cx: 0, cy: 0, r: f(r * 0.78), fill }, g);
-    el("circle", { cx: 0, cy: 0, r: f(r * 0.2), fill: kind === "orange" ? "#9a3f06" : "#b97410", opacity: "0.6" }, g);
+    el("circle", { cx: 0, cy: 0, r: f(r * 0.2), fill: kind === "red" ? "#5e1226" : "#b14a6e", opacity: "0.6" }, g);
   }
 
   // A mango leaf hanging from (x, y); angle 0 points straight down.
@@ -809,37 +810,24 @@ startPetals(document.getElementById("rsvp-petals"), ROSE_PETALS.concat(MARIGOLD_
     el("path", { d: "M0 2 L0 " + f(len - 3), stroke: "#163a14", "stroke-width": "0.6", opacity: "0.5" }, g);
   }
 
+  // A string of flowers hanging straight down from the top edge, with pairs of leaves along it.
+  // Flower size follows the strand's width so the mobile strands are daintier.
   function build(host) {
     host.innerHTML = "";
     const id = "gl" + (uid++);
-    const type = host.getAttribute("data-garland");
-    const W = Math.max(type === "strand" ? 24 : 200, host.clientWidth);
-    const H = type === "strand" ? Math.max(120, host.clientHeight) : 150;
+    const W = Math.max(20, host.clientWidth);
+    const H = Math.max(120, host.clientHeight);
     const svg = el("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H }, host);
     defs(svg, id);
+    const x = W / 2, r = W * 0.25, step = r * 1.65;
+    el("path", { d: "M" + f(x) + " 0 L" + f(x) + " " + f(H), stroke: "#8a6a4a", "stroke-width": "1.2" }, svg);
+    for (let y = step * 2.5; y < H - step; y += step * 3.2) { leaf(svg, id, x, y, r * 2.4, -32); leaf(svg, id, x, y, r * 2.4, 32); }
     const pts = [];
-
-    if (type === "strand") {
-      // A string of marigolds hanging straight down, with pairs of leaves along it
-      const x = W / 2;
-      el("path", { d: "M" + f(x) + " 0 L" + f(x) + " " + f(H), stroke: "#5b3b22", "stroke-width": "1.2" }, svg);
-      for (let y = 40; y < H - 20; y += 48) { leaf(svg, id, x, y, 22, -32); leaf(svg, id, x, y, 22, 32); }
-      for (let y = 4; y < H - 6; y += 15) pts.push([x + rand(-1.5, 1.5), y]);
-    } else {
-      // A toran: a sagging string across the width, marigolds packed along it, mango leaves below
-      const sag = Math.min(80, W * 0.075), y0 = 8, step = 15;
-      const n = Math.ceil(W / step);
-      const d = [];
-      for (let i = 0; i <= n; i++) {
-        const t = i / n;
-        const x = t * W, y = y0 + sag * 4 * t * (1 - t);
-        pts.push([x, y]);
-        d.push((i ? "L" : "M") + f(x) + " " + f(y));
-      }
-      el("path", { d: d.join(" "), stroke: "#5b3b22", "stroke-width": "1.4", fill: "none" }, svg);
-      for (let i = 2; i < n - 1; i += 4) leaf(svg, id, pts[i][0], pts[i][1] + 2, rand(26, 36), rand(-10, 10));
-    }
-    pts.forEach((p, i) => marigold(svg, id, p[0], p[1], rand(7.5, 9.5), i % 3 === 1 ? "yellow" : "orange"));
+    for (let y = r * 0.5; y < H - r * 0.6; y += step) pts.push([x + rand(-1.5, 1.5), y]);
+    pts.forEach((p, i) => marigold(svg, id, p[0], p[1], r * rand(0.85, 1.05), i % 2 ? "pink" : "red"));
+    // A little tassel at the end of the string
+    const last = pts[pts.length - 1];
+    el("path", { d: "M" + f(x) + " " + f(last[1]) + " L" + f(x) + " " + f(Math.min(H, last[1] + r * 1.4)), stroke: "#b48a44", "stroke-width": "1.2" }, svg);
   }
 
   function buildAll() { hosts.forEach(build); }
