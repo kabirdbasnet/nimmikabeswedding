@@ -449,14 +449,12 @@ body.is-gated { overflow: hidden; }
 .field textarea { resize: vertical; }
 .field input:focus, .field textarea:focus { border-color: var(--gold); }
 .field input::placeholder, .field textarea::placeholder { color: color-mix(in srgb, var(--brown-soft) 55%, transparent); }
-.field--short { max-width: 220px; }
-.choices { border: 0; padding: 0; margin: 0 0 22px; text-align: left; }
-.choices legend {
+.field--short { max-width: 320px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+@media (max-width: 480px) { .field-row { grid-template-columns: 1fr; } }
   font-size: 0.64rem; letter-spacing: 0.24em; text-transform: uppercase;
   color: var(--brown-soft); margin-bottom: 8px; padding: 0;
 }
-.choices label { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.98rem; cursor: pointer; }
-.choices input { accent-color: var(--rose); width: 16px; height: 16px; margin: 0; }
 .rsvp__form { margin-top: 32px; }
 .rsvp__form .btn { margin-top: 8px; }
 .form__msg { min-height: 1.4em; margin: 18px 0 0; font-size: 0.86rem; letter-spacing: 0.04em; color: var(--brown-soft); }

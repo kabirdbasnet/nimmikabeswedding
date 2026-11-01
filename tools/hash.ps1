@@ -1,10 +1,10 @@
 <#
-  Generates the salted SHA-256 hash of the site password for js/main.js.
+  Generates the salted SHA-256 hash of an invitation password for js/main.js.
 
   Usage (from the project folder, in PowerShell):
     .\tools\hash.ps1 "my-new-password"
 
-  Paste the output into CONFIG.sitePasswordHash. The salt must match CONFIG.hashSalt.
+  Paste the output as the `hash` of the matching entry in CONFIG.passwords. The salt must match CONFIG.hashSalt.
 #>
 param(
   [Parameter(Mandatory = $true, Position = 0)][string]$Password,

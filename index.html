@@ -20,8 +20,8 @@
     // same tab session, the flower curtain. First-time visitors always get the curtain behind the gate.
     try {
       // Visit /?reset to forget the password and replay the flowers (handy for testing).
-      if (/[?&]reset\b/.test(location.search)) { localStorage.removeItem("nk_access"); localStorage.removeItem("nk_invite"); sessionStorage.removeItem("introSeen"); }
-      if (localStorage.getItem("nk_access") && localStorage.getItem("nk_invite") !== null) {
+      if (/[?&]reset\b/.test(location.search)) { localStorage.removeItem("nk_access"); localStorage.removeItem("nk_rsvp"); sessionStorage.removeItem("introSeen"); }
+      if (localStorage.getItem("nk_access")) {
         document.documentElement.classList.add("gate-skip");
         if (sessionStorage.getItem("introSeen")) document.documentElement.classList.add("intro-skip");
       }
@@ -36,11 +36,7 @@
       <svg class="motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
       <p class="eyebrow">You're invited</p>
       <h1 class="gate__names">Namita <span class="amp">&amp;</span> Kabir</h1>
-      <p class="gate__hint">Please sign in with the details from your invitation.</p>
-      <label class="field" id="gate-email-field">
-        <span>Email your invitation was sent to</span>
-        <input type="email" id="gate-email" name="email" autocomplete="email" required>
-      </label>
+      <p class="gate__hint">Please enter the password from your invitation.</p>
       <label class="field">
         <span>Password</span>
         <input type="password" id="gate-password" name="password" autocomplete="current-password" required>
@@ -331,39 +327,30 @@
         <svg class="motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
         <h2>RSVP</h2>
         <p class="lede">We can't wait to celebrate<br>with you!</p>
-        <!-- Step 1: find the invitation by email -->
-        <form class="rsvp__form" id="rsvp-lookup" novalidate>
-          <p class="rsvp__note">Enter the email address your invitation was sent to.</p>
-          <label class="field">
-            <span>Email</span>
-            <input type="email" name="email" autocomplete="email" required>
-          </label>
-          <button class="btn btn--outline btn--lg" type="submit">Find my invitation <span class="arrow">→</span></button>
-          <p class="form__msg" id="rsvp-lookup-msg" aria-live="polite"></p>
-        </form>
-
-        <!-- Step 2: reply, one answer per invited event (built by js/main.js) -->
-        <form class="rsvp__form" id="rsvp-form" novalidate hidden>
+        <!-- The events named here follow the invitation password (js/main.js) -->
+        <form class="rsvp__form" id="rsvp-form" novalidate>
           <p class="rsvp__greeting" id="rsvp-greeting"></p>
-          <div id="rsvp-events"></div>
 
-          <label class="field field--short" id="rsvp-guests-field">
-            <span>Guests in your party <em id="rsvp-guests-hint"></em></span>
-            <input type="number" name="guests" min="1" max="10" value="1" required>
-          </label>
-          <label class="field">
-            <span>Dietary requirements</span>
-            <input type="text" name="dietary" maxlength="200" placeholder="Vegetarian, allergies, anything we should know">
-          </label>
-          <label class="field">
-            <span>A note for us (optional)</span>
-            <textarea name="message" rows="3" maxlength="500"></textarea>
+          <div class="field-row">
+            <label class="field">
+              <span>First name</span>
+              <input type="text" name="firstName" autocomplete="given-name" maxlength="60" required>
+            </label>
+            <label class="field">
+              <span>Last name</span>
+              <input type="text" name="lastName" autocomplete="family-name" maxlength="60" required>
+            </label>
+          </div>
+          <label class="field field--short">
+            <span>How many people are you bringing with you?</span>
+            <input type="number" name="bringing" min="0" max="20" step="1" inputmode="numeric" placeholder="0" required>
           </label>
 
           <button class="btn btn--outline btn--lg" type="submit">Send RSVP <span class="arrow">→</span></button>
           <p class="form__msg" id="rsvp-msg" aria-live="polite"></p>
-          <button class="textlink rsvp__back" id="rsvp-back" type="button">Not you? Sign in with a different email</button>
+          <button class="textlink rsvp__back" id="rsvp-back" type="button">Have a different invitation? Sign in again</button>
         </form>
+        <p class="rsvp__note" id="rsvp-closed" hidden>Online RSVPs open with the formal invitation — please check back soon.</p>
       </div>
     </section>
 

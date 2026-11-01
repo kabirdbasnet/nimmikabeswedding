@@ -1,6 +1,6 @@
 /* =========================================================
    Namita & Kabir · Save the Date
-   Edit the CONFIG block to change dates, venue or RSVP link.
+   Edit the CONFIG block to change dates, venue, passwords or the RSVP link.
    ========================================================= */
 
 const CONFIG = {
@@ -9,30 +9,42 @@ const CONFIG = {
   startDate: "2027-06-25",
   endDate: "2027-06-27",
   venue: "Aura, Bengaluru",
-  // The `key` of each event matches the column name in the Guests sheet (see rsvp-backend/README.md).
   events: [
     { key: "haldi",   title: "Haldi & Mehendi",  date: "2027-06-25", dress: "Bright, festive colours. Yellows and florals welcome." },
     { key: "sangeet", title: "Sangeet",          date: "2027-06-26", dress: "Glamorous evening wear. Jewel tones and sparkle encouraged." },
     { key: "wedding", title: "Wedding Ceremony", date: "2027-06-27", dress: "Traditional formal. Pastels, ivory and gold." },
   ],
 
-  /* ---- Site password ----
-     Only a salted SHA-256 hash of the password is stored here. Generate a new one with
-     tools/hash.ps1 "new-password", or in the browser console on this site: await weddingHash("new-password")
-     Default password is "aura2027" — change it before sharing the link! */
+  /* ---- Invitation passwords ----
+     One password per combination of events. The password a guest types decides which events
+     the whole site shows them; nothing in the link can change that. Only salted SHA-256 hashes
+     live here. Make a hash with tools/hash.ps1 "new-password" (or, in the browser console on
+     this site: await weddingHash("new-password")) and paste it in.
+     The defaults below are placeholders — change them before sharing the link!
+       aura2027     → all three        jasmine2027 → Sangeet + Wedding
+       marigold2027 → Wedding only     mogra2027   → Haldi + Wedding
+       lotus2027    → Haldi + Sangeet  tulsi2027   → Haldi only
+       champa2027   → Sangeet only
+     Delete any combination you won't use. */
   hashSalt: "namita-kabir-2027",
-  sitePasswordHash: "3ec5cc423f6f22f998678f98055d66ab618f5e59df28d14c55616c162e5c9b43",
+  passwords: [
+    { label: "All three celebrations", events: ["haldi", "sangeet", "wedding"], hash: "3ec5cc423f6f22f998678f98055d66ab618f5e59df28d14c55616c162e5c9b43" },
+    { label: "Sangeet and Wedding",    events: ["sangeet", "wedding"],          hash: "fc14a06965bc29118ea46c7bb9bd06a96a3457cb1c7ff3ae37a7dca795405cca" },
+    { label: "Wedding only",           events: ["wedding"],                     hash: "d7afb7db65faf26cfdc5ca91f384b792adeb2eb5868c6d70289107d6d94df809" },
+    { label: "Haldi and Wedding",      events: ["haldi", "wedding"],            hash: "8b28e7cdb7e6b0bb7e585c8d64664acc63d36de3704cc0d18e865e2adde261f7" },
+    { label: "Haldi and Sangeet",      events: ["haldi", "sangeet"],            hash: "5cd6622b36f4f7339dabcd42fac082c68b9604d60df612f96853df10daf3bae0" },
+    { label: "Haldi only",             events: ["haldi"],                       hash: "73b519f69b0025edacb48f35d87c00bb844cac3a4620503cb33c193166deabc7" },
+    { label: "Sangeet only",           events: ["sangeet"],                     hash: "c88e9dfcd5df88e47524c8ece4f0f0ce6fd8dc8d90e981b5e557f2495cfb2bde" },
+  ],
 
   /* ---- RSVP ----
-     Google Apps Script web-app URL (see rsvp-backend/README.md). The Google Sheet behind it holds
-     the guest list: who is invited, to which events, and how many guests they may bring.
-     Leave empty until it's deployed. On localhost the form then runs in a preview mode that
-     accepts any email and saves nothing, so you can see how it looks. */
+     Google Apps Script web-app URL (see rsvp-backend/README.md). Replies land in a Google Sheet,
+     and the script checks the password again on its side before saving.
+     Leave empty until it's deployed: the form then runs in preview mode and saves nothing. */
   rsvpEndpoint: "",
 
-  // While rsvpEndpoint is empty, run the live site in preview mode too: the sign-in asks for an
-  // email, any email is accepted, and nothing is saved. Set to false (or connect the sheet)
-  // before sharing the link with guests.
+  // While rsvpEndpoint is empty, let the live site show the RSVP form in preview mode too
+  // (nothing is saved). Set to false, or connect the sheet, before sharing the link with guests.
   preview: true,
 };
 
@@ -45,43 +57,27 @@ async function weddingHash(value) {
 }
 window.weddingHash = weddingHash;
 
-/* ---------- Invitation: who is signed in and which events they're invited to ---------- */
-const INVITE_KEY = "nk_invite";
-// Running locally with no backend: any email works. Put event names in the email to try partial
-// invitations, e.g. "wedding@test.com" or "sangeet.wedding@test.com". Nothing is saved.
+/* ---------- Invitation: which password was used, and so which events to show ----------
+   The only thing stored in the browser is the hash of the password the guest typed (nk_access).
+   On every load the events are looked up from that hash in CONFIG.passwords, never from the
+   URL or from anything else a guest could edit. */
+const ACCESS_KEY = "nk_access";
+// With no backend, the RSVP form runs in preview mode: it looks and behaves the same but saves nothing.
 const PREVIEW_MODE = !CONFIG.rsvpEndpoint && (CONFIG.preview || /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
-// The site can only personalise per guest when the backend (or preview mode) is available.
-const CAN_PERSONALISE = Boolean(CONFIG.rsvpEndpoint) || PREVIEW_MODE;
+const RSVP_OPEN = Boolean(CONFIG.rsvpEndpoint) || PREVIEW_MODE;
+
+function inviteForHash(hash) {
+  const entry = CONFIG.passwords.find((p) => p.hash === hash);
+  if (!entry) return null;
+  const events = CONFIG.events.filter((ev) => entry.events.includes(ev.key)).map((ev) => ev.key);
+  if (!events.length) return null;
+  return { hash: entry.hash, label: entry.label || "", events };
+}
 
 window.NK_INVITE = null;
-try { window.NK_INVITE = JSON.parse(localStorage.getItem(INVITE_KEY)); } catch (e) {}
-if (!CAN_PERSONALISE || !window.NK_INVITE || !Array.isArray(window.NK_INVITE.events)) window.NK_INVITE = null;
+try { window.NK_INVITE = inviteForHash(localStorage.getItem(ACCESS_KEY)); } catch (e) {}
 
-function saveInvite(inv) {
-  window.NK_INVITE = inv;
-  try { localStorage.setItem(INVITE_KEY, JSON.stringify(inv)); } catch (e) {}
-}
-
-// Ask the backend which events this email is invited to.
-async function lookupInvite(email) {
-  email = String(email).trim().toLowerCase();
-  if (PREVIEW_MODE) {
-    const local = email.split("@")[0];
-    const picked = CONFIG.events.filter((ev) => local.includes(ev.key)).map((ev) => ev.key);
-    return { ok: true, invited: true, email, name: "Preview Guest", maxGuests: 2, response: null,
-             events: picked.length ? picked : CONFIG.events.map((ev) => ev.key) };
-  }
-  const res = await fetch(CONFIG.rsvpEndpoint + "?email=" + encodeURIComponent(email), { cache: "no-store" });
-  const out = await res.json();
-  if (out && out.ok && out.invited) out.email = email;
-  return out;
-}
-
-function inviteFromLookup(out) {
-  return { email: out.email, name: out.name || "", events: out.events, maxGuests: out.maxGuests || 1, response: out.response || null };
-}
-
-// The events to show: the guest's invited ones, or all of them when nobody is signed in.
+// The events to show: the signed-in guest's, or all of them before anyone has signed in.
 function invitedEvents() {
   const inv = window.NK_INVITE;
   if (!inv) return CONFIG.events;
@@ -162,41 +158,30 @@ applyInvite();
   if (!gate) return;
   const form = document.getElementById("gate-form");
   const input = document.getElementById("gate-password");
-  const emailField = document.getElementById("gate-email-field");
-  const emailInput = document.getElementById("gate-email");
   const msg = document.getElementById("gate-msg");
   const btn = form.querySelector('button[type="submit"]');
-  const KEY = "nk_access";
 
   function unlock() {
-    try {
-      localStorage.setItem(KEY, CONFIG.sitePasswordHash);
-      // Without a backend there is no invitation to store; keep a marker so the gate can be skipped next time.
-      if (!CAN_PERSONALISE) localStorage.setItem(INVITE_KEY, "null");
-    } catch (e) {}
     gate.classList.add("is-open");
     document.body.classList.remove("is-gated");
     setTimeout(() => gate.remove(), 700);
     window.dispatchEvent(new Event("nk:unlocked"));
   }
 
-  let stored = null;
-  try { stored = localStorage.getItem(KEY); } catch (e) {}
-  const signedIn = stored === CONFIG.sitePasswordHash && (!CAN_PERSONALISE || Boolean(window.NK_INVITE));
-  if (signedIn) {
+  // Already signed in with a password that still exists: skip the gate.
+  if (window.NK_INVITE) {
     gate.remove();
     document.body.classList.remove("is-gated");
     document.documentElement.classList.add("gate-skip");
     return;
   }
 
-  // Not signed in yet (or the password changed): show the gate with the flower curtain behind it.
-  try { localStorage.removeItem(KEY); } catch (e) {}
+  // Not signed in (or the password was changed): show the gate with the flower curtain behind it.
+  try { localStorage.removeItem(ACCESS_KEY); } catch (e) {}
   document.documentElement.classList.remove("gate-skip");
   document.documentElement.classList.remove("intro-skip");
   document.body.classList.add("is-gated");
-  if (!CAN_PERSONALISE) { emailField.hidden = true; emailInput.required = false; }
-  setTimeout(() => (CAN_PERSONALISE ? emailInput : input).focus(), 50);
+  setTimeout(() => input.focus(), 50);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -204,23 +189,15 @@ applyInvite();
     msg.textContent = "";
     btn.disabled = true;
     try {
-      const hash = await weddingHash(input.value);
-      if (hash !== CONFIG.sitePasswordHash) {
+      const invite = inviteForHash(await weddingHash(input.value));
+      if (!invite) {
         msg.textContent = "That password doesn't match. Please check your invitation.";
         input.select();
         return;
       }
-      if (CAN_PERSONALISE) {
-        msg.textContent = "Finding your invitation…";
-        const out = await lookupInvite(emailInput.value);
-        if (!out || !out.ok || !out.invited || !Array.isArray(out.events) || out.events.length === 0) {
-          msg.textContent = "We couldn't find that email on our guest list. Please use the address your invitation was sent to.";
-          emailInput.select();
-          return;
-        }
-        saveInvite(inviteFromLookup(out));
-        applyInvite();
-      }
+      window.NK_INVITE = invite;
+      try { localStorage.setItem(ACCESS_KEY, invite.hash); } catch (e) {}
+      applyInvite();
       unlock();
     } catch (err) {
       msg.textContent = err && err.message === "no-crypto"
@@ -472,136 +449,67 @@ applyInvite();
   });
 })();
 
-/* ---------- RSVP: one answer per invited event ---------- */
+/* ---------- RSVP: name + party size, for the events the password unlocked ---------- */
 (function () {
-  const lookup = document.getElementById("rsvp-lookup");
   const form = document.getElementById("rsvp-form");
-  if (!lookup || !form) return;
+  const closed = document.getElementById("rsvp-closed");
+  if (!form || !closed) return;
 
-  const lookupMsg = document.getElementById("rsvp-lookup-msg");
-  const lookupBtn = lookup.querySelector('button[type="submit"]');
   const msg = document.getElementById("rsvp-msg");
   const submitBtn = form.querySelector('button[type="submit"]');
   const greeting = document.getElementById("rsvp-greeting");
-  const eventsHost = document.getElementById("rsvp-events");
-  const guestsField = document.getElementById("rsvp-guests-field");
-  const guestsHint = document.getElementById("rsvp-guests-hint");
-  const guestsInput = form.elements.guests;
   const back = document.getElementById("rsvp-back");
-
-  const NOT_FOUND = "We couldn't find that email on our guest list. Please use the address your invitation was sent to, or get in touch with us.";
   const FAILED = "Something went wrong. Please try again in a moment, or message us directly.";
+  const DONE_KEY = "nk_rsvp";
 
-  let invite = null;
-
-  function say(el, text, kind) {
-    el.textContent = text || "";
-    el.className = "form__msg" + (kind ? " is-" + kind : "");
+  function say(text, kind) {
+    msg.textContent = text || "";
+    msg.className = "form__msg" + (kind ? " is-" + kind : "");
   }
 
-  function renderEvents(inv) {
-    eventsHost.innerHTML = "";
-    const prev = (inv.response && inv.response.events) || {};
-    CONFIG.events.filter((ev) => inv.events.includes(ev.key)).forEach((ev) => {
-      const fs = document.createElement("fieldset");
-      fs.className = "choices";
-      const legend = document.createElement("legend");
-      legend.textContent = ev.title + " · " + fmtDay(ev.date);
-      fs.appendChild(legend);
-      [["yes", "Joyfully accept"], ["no", "Regretfully decline"]].forEach(([val, text]) => {
-        const label = document.createElement("label");
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = "ev_" + ev.key;
-        input.value = val;
-        input.required = true;
-        input.checked = prev[ev.key] === val;
-        label.append(input, " " + text);
-        fs.appendChild(label);
-      });
-      eventsHost.appendChild(fs);
-    });
-  }
+  // Runs on load and again when the guest signs in at the gate.
+  function setup() {
+    const invite = window.NK_INVITE;
+    form.hidden = !invite || !RSVP_OPEN;
+    closed.hidden = !invite || RSVP_OPEN;
+    if (form.hidden) return;
 
-  function showForm(inv, focus) {
-    const invitedEvs = CONFIG.events.filter((ev) => inv.events.includes(ev.key));
-    const hello = "Hello" + (inv.name ? ", " + inv.name : "") + "! ";
-    greeting.textContent = hello + (invitedEvs.length === CONFIG.events.length
-      ? "You're invited to all three celebrations."
-      : "You're invited to the " + joinNames(invitedEvs.map((e) => e.title)) + ".");
+    const invitedEvs = CONFIG.events.filter((ev) => invite.events.includes(ev.key));
+    greeting.textContent = invitedEvs.length === CONFIG.events.length
+      ? "You're invited to all three celebrations: " + joinNames(invitedEvs.map((e) => e.title)) + "."
+      : "You're invited to the " + joinNames(invitedEvs.map((e) => e.title)) + ".";
 
-    renderEvents(inv);
-
-    const max = Math.max(1, Number(inv.maxGuests) || 1);
-    guestsInput.max = max;
-    guestsInput.value = Math.min(max, (inv.response && inv.response.guests) || 1);
-    guestsHint.textContent = "(up to " + max + ")";
-    guestsField.hidden = max <= 1;
-
-    form.elements.dietary.value = (inv.response && inv.response.dietary) || "";
-    form.elements.message.value = (inv.response && inv.response.message) || "";
-
-    const notes = [];
-    if (inv.response) notes.push("We already have your reply. Send again to update it.");
-    if (PREVIEW_MODE) notes.push("Preview mode: nothing is saved.");
-    say(msg, notes.join(" "), inv.response ? "ok" : "");
-
-    lookup.hidden = true;
-    form.hidden = false;
-    if (focus) {
-      const first = eventsHost.querySelector("input");
-      if (first) first.focus({ preventScroll: true });
+    // Pre-fill a previous reply from this browser.
+    let previous = null;
+    try { previous = JSON.parse(localStorage.getItem(DONE_KEY)); } catch (e) {}
+    if (previous && previous.hash === invite.hash) {
+      form.elements.firstName.value = previous.firstName || "";
+      form.elements.lastName.value = previous.lastName || "";
+      form.elements.bringing.value = previous.bringing == null ? "" : previous.bringing;
+      say("We already have your reply. Send again to update it.", "ok");
+    } else {
+      say(PREVIEW_MODE ? "Preview mode: nothing is saved." : "");
     }
   }
-
-  // Fallback step 1, only used when the guest somehow reached the page without signing in by email.
-  lookup.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!lookup.reportValidity()) return;
-    const email = lookup.elements.email.value.trim().toLowerCase();
-
-    if (!CAN_PERSONALISE) {
-      say(lookupMsg, "Online RSVPs open with the formal invitation — please check back soon.", "ok");
-      return;
-    }
-
-    lookupBtn.disabled = true;
-    say(lookupMsg, "Looking up your invitation…");
-    try {
-      const out = await lookupInvite(email);
-      if (!out || !out.ok || !out.invited || !Array.isArray(out.events) || out.events.length === 0) {
-        say(lookupMsg, NOT_FOUND, "error");
-        return;
-      }
-      invite = inviteFromLookup(out);
-      saveInvite(invite);
-      applyInvite();
-      say(lookupMsg, "");
-      showForm(invite, true);
-    } catch (err) {
-      say(lookupMsg, FAILED, "error");
-    } finally {
-      lookupBtn.disabled = false;
-    }
-  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const invite = window.NK_INVITE;
     if (!invite || !form.reportValidity()) return;
 
-    const fd = new FormData(form);
-    const events = {};
-    invite.events.forEach((key) => { events[key] = fd.get("ev_" + key); });
     const data = {
-      email: invite.email,
-      events,
-      guests: guestsField.hidden ? 1 : Number(fd.get("guests") || 1),
-      dietary: String(fd.get("dietary") || "").trim(),
-      message: String(fd.get("message") || "").trim(),
+      hash: invite.hash,
+      firstName: form.elements.firstName.value.trim(),
+      lastName: form.elements.lastName.value.trim(),
+      bringing: Math.max(0, Math.min(20, Math.round(Number(form.elements.bringing.value)))),
     };
+    if (!data.firstName || !data.lastName) {
+      say("Please enter your first and last name.", "error");
+      return;
+    }
 
     submitBtn.disabled = true;
-    say(msg, "Sending your RSVP…");
+    say("Sending your RSVP…");
     try {
       let out = { ok: true };
       if (!PREVIEW_MODE) {
@@ -609,44 +517,29 @@ applyInvite();
         out = await res.json();
       }
       if (out.ok) {
-        invite.response = data;
-        saveInvite(invite);
-        const anyYes = Object.values(events).includes("yes");
-        say(msg, (anyYes ? "Thank you! We can't wait to celebrate with you." : "Thank you for letting us know. You'll be missed!")
+        try { localStorage.setItem(DONE_KEY, JSON.stringify(data)); } catch (e) {}
+        say("Thank you, " + data.firstName + "! We can't wait to celebrate with you."
           + (PREVIEW_MODE ? " (Preview mode: nothing was saved.)" : ""), "ok");
-      } else if (out.error === "not_invited") {
-        say(msg, NOT_FOUND, "error");
+      } else if (out.error === "bad_password") {
+        say("Your sign-in has expired. Please sign in again with the password from your invitation.", "error");
       } else {
-        say(msg, FAILED, "error");
+        say(FAILED, "error");
       }
     } catch (err) {
-      say(msg, FAILED, "error");
+      say(FAILED, "error");
     } finally {
       submitBtn.disabled = false;
     }
   });
 
-  // "Not you?" signs the guest out and returns to the password screen.
+  // "Different invitation?" signs the guest out and returns to the password screen.
   back.addEventListener("click", () => {
-    try { localStorage.removeItem(INVITE_KEY); localStorage.removeItem("nk_access"); } catch (e) {}
+    try { localStorage.removeItem(ACCESS_KEY); } catch (e) {}
     location.href = location.pathname;
   });
 
-  // Signed-in guests go straight to their form; refresh it from the sheet to pick up any changes.
-  if (window.NK_INVITE) {
-    invite = window.NK_INVITE;
-    showForm(invite, false);
-    if (!PREVIEW_MODE) {
-      lookupInvite(invite.email).then((out) => {
-        if (out && out.ok && out.invited && Array.isArray(out.events) && out.events.length) {
-          invite = inviteFromLookup(out);
-          saveInvite(invite);
-          applyInvite();
-          showForm(invite, false);
-        }
-      }).catch(() => {});
-    }
-  }
+  setup();
+  window.addEventListener("nk:unlocked", setup);
 })();
 
 /* ---------- Falling petals (hero and RSVP) ---------- */

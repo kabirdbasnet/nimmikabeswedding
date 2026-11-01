@@ -15,34 +15,44 @@ To use a custom domain later, add it under the same Pages settings and GitHub wi
 
 | What | Where |
 | --- | --- |
-| Dates, venue, site password, guest emails, RSVP endpoint | `js/main.js` → the `CONFIG` block at the top |
+| Dates, venue, invitation passwords, RSVP endpoint | `js/main.js` → the `CONFIG` block at the top |
 | All page text (hero, events, travel, FAQ) | `index.html` |
 | Colours and fonts | `css/styles.css` → the `:root` variables at the top |
 | Pictures | `assets/images/` (see below) |
 
-### Site password
+### Invitation passwords
 
-Guests see a password screen before the site. The password itself is never stored, only a salted hash in `sitePasswordHash` in `js/main.js`. The default password is **aura2027** — change it before sharing the link:
+Guests see a password screen before the site. There is one password per combination of events, and the password a guest types decides which events the whole site shows them: the weekend cards, the Events list, the dates in the hero and footer, the countdown, the FAQ answers about dates and dress code, the calendar download and the RSVP form all follow it. Nothing in the link can change that; the only thing stored in the browser is the hash of the password they typed, and the events are looked up from that hash on every visit.
+
+The passwords themselves are never stored in the site, only salted hashes, in `CONFIG.passwords` in `js/main.js`. The defaults are placeholders — change them before sharing the link:
+
+| Default password | Shows |
+| --- | --- |
+| aura2027 | All three celebrations |
+| jasmine2027 | Sangeet and Wedding |
+| marigold2027 | Wedding only |
+| mogra2027 | Haldi and Wedding |
+| lotus2027 | Haldi and Sangeet |
+| tulsi2027 | Haldi only |
+| champa2027 | Sangeet only |
+
+To change one, make its hash and paste it over the old one in `CONFIG.passwords` (delete the combinations you won't use):
 
 ```powershell
 .\tools\hash.ps1 "your-new-password"
 ```
 
-Paste the output into `sitePasswordHash`. Guests who already signed in with the old password will be asked again.
+Guests who signed in with an old password will be asked to sign in again. Pick passwords that can't be guessed from each other, so a guest with the "Wedding only" password can't work out the "all three" one.
 
-Honest note: this keeps strangers and search engines from seeing the page, but anyone technical could read the page source. It is not meant to protect secrets, just to keep the site among invited guests.
+Honest note: this keeps strangers and search engines from seeing the page, but anyone technical could read the page source and see that other combinations exist (not what their passwords are). It is not meant to protect secrets, just to keep each guest to their own invitation.
 
 ### RSVP
 
-### Per-guest invitations
+The RSVP form asks for first name, last name and how many people the guest is bringing. All three are required, and the events on the reply come from the password they signed in with. Replies go to a Google Sheet through a small Apps Script that checks the password again on its side; setup takes about ten minutes and is described in [`rsvp-backend/README.md`](rsvp-backend/README.md).
 
-Guests sign in with the password **and** the email their invitation was sent to. The site looks the email up in your Google Sheet and then shows that guest only the events they're invited to (one, two or all three): the weekend cards, the Events list, the dates in the hero and footer, the countdown, the FAQ answers about dates and dress code, the calendar download and the RSVP form all follow the invitation.
+Until `rsvpEndpoint` is filled in, the form runs in **preview mode** (`preview: true` in `js/main.js`): it works but saves nothing. Connect the sheet (or set `preview: false`, which shows "RSVPs open with the formal invitation" instead) before sharing the link with guests.
 
-The guest list lives entirely in the sheet: email, name, a Y per invited event, and the party size they may RSVP for. Setup takes about ten minutes and is described in [`rsvp-backend/README.md`](rsvp-backend/README.md). Edit the sheet and the site updates the next time that guest opens it.
-
-Until `rsvpEndpoint` is filled in, the site runs in **preview mode** (`preview: true` in `js/main.js`): the sign-in asks for an email, any email is accepted, and RSVPs are not saved. Put event names in the email to try a partial invitation, e.g. `wedding@test.com` or `sangeet.wedding@test.com`. Connect the sheet (or set `preview: false`) before sharing the link with guests; with `preview: false` and no sheet, the site asks for the password only and shows all three events.
-
-"Not you? Sign in with a different email" under the RSVP form signs the guest out. Visiting `/?reset` does the same and replays the flowers.
+"Have a different invitation? Sign in again" under the RSVP form returns to the password screen. Visiting `/?reset` does the same and replays the flowers.
 
 ### Images
 

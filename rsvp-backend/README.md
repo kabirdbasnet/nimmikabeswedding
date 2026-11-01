@@ -1,25 +1,25 @@
 # RSVP backend · Google Sheet + Apps Script
 
-Free, nothing to host. The Google Sheet is your guest list *and* where responses land.
+Free, nothing to host. The Google Sheet holds your invitation passwords *and* is where replies land.
 
 ## 1. Make the sheet
 
-Create a new Google Sheet (e.g. **Wedding RSVPs**). Rename the first tab to **Guests** and give it this header row, then one row per guest or household:
+Create a new Google Sheet (e.g. **Wedding RSVPs**). Rename the first tab to **Passwords** and give it this header row, then one row per password:
 
-| Email | Name | Haldi | Sangeet | Wedding | Max guests |
-| --- | --- | --- | --- | --- | --- |
-| priya@example.com | Priya & Arjun | Y | Y | Y | 2 |
-| uncle@example.com | Rao Uncle & Aunty | | | Y | 2 |
-| college@example.com | Sam | | Y | Y | 1 |
+| Password | Label | Haldi | Sangeet | Wedding |
+| --- | --- | --- | --- | --- |
+| aura2027 | All three celebrations | Y | Y | Y |
+| jasmine2027 | Sangeet and Wedding | | Y | Y |
+| marigold2027 | Wedding only | | | Y |
 
-- Put **Y** in an event column to invite that guest to it (yes / x / a ticked checkbox also work). Leave it blank to not invite.
-- **Max guests** is the party size they may RSVP for. Blank means 1, and the party-size field is then hidden on the site.
-- **Name** is used in the greeting: "Hello, Priya & Arjun! You're invited to all three celebrations."
-- Emails are matched case-insensitively. Use the address you'll send the invitation to.
+- Put **Y** in an event column to include that event (yes / x / a ticked checkbox also work).
+- **Label** is what you'll see in the Responses tab next to each reply.
+- These must be the same passwords whose hashes are in `CONFIG.passwords` in `js/main.js` (see the main README). The site decides what a guest sees from the hash; this script re-checks the hash against this tab before saving, so a reply can't be forged for events a password doesn't include.
+- Only the sheet owner can see this tab. Passwords are never sent to the browser; the site only ever sends their hash.
 
 ## 2. Add the script
 
-In the sheet open **Extensions → Apps Script**, delete the sample code, paste in `Code.gs`, and save.
+In the sheet open **Extensions → Apps Script**, delete the sample code, paste in `Code.gs`, and save. If you changed `hashSalt` in `js/main.js`, change `HASH_SALT` at the top of the script to match.
 
 ## 3. Deploy
 
@@ -37,13 +37,12 @@ Paste the URL into `rsvpEndpoint` in `js/main.js`. Done.
 
 ## Day to day
 
-- **Add or change a guest**: edit the Guests tab. No code change, takes effect immediately.
-- **See replies**: the **Responses** tab appears after the first RSVP. One row per email, with Yes / No / Not invited per event, party size, dietary notes and message. A second submission from the same email updates the row, and the site pre-fills their previous answers.
+- **See replies**: the **Responses** tab appears after the first RSVP. Each row has first name, last name, how many people they're bringing, the total including themselves, which invitation (label) they used, and a Yes under each event that invitation covers. A second submission with the same name and password updates the row.
+- **Change a password**: update it in the Passwords tab *and* put its new hash in `js/main.js` (`.\tools\hash.ps1 "new-password"`). Guests signed in with the old one will be asked to sign in again.
 - **Change the script**: edit in Apps Script, then **Deploy → Manage deployments → pencil icon → Version: New version → Deploy**. The URL stays the same.
 
 ## What guests see
 
-1. On the password screen they also enter their email. If it isn't on the Guests tab they're told to check the address.
-2. The whole site is tailored to them: only their events appear in the weekend cards, Events list, dates, FAQ and calendar download.
-3. The RSVP section greets them by name with one "Joyfully accept" / "Regretfully decline" per invited event.
-4. They send. You see it in the sheet within seconds. If they come back, their previous answers are pre-filled.
+1. A password screen. The password on their invitation unlocks the site and decides which events they see: the weekend cards, Events list, dates, countdown, FAQ answers and calendar download all follow it. There is nothing in the link they can change to see a different set.
+2. The RSVP section names their events and asks for first name, last name and how many people they're bringing. All three are required.
+3. They send. You see it in the sheet within seconds.
