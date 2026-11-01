@@ -59,7 +59,7 @@
 
       <nav class="nav__links" id="nav-links" aria-label="Main">
         <a href="#top">Home</a>
-        <a href="#story">Our Story</a>
+        <a href="#proposal">The Proposal</a>
         <a href="#events">Events</a>
         <a href="#travel">Travel</a>
         <a href="#faq">FAQ</a>
@@ -90,8 +90,12 @@
           <p class="hero__tagline" id="hero-tagline">Three days of love, culture<br>and celebration</p>
         </div>
 
-        <img class="hero__img" src="assets/images/hero-scene.jpg" fetchpriority="high"
-             alt="Namita and Kabir sitting together beneath a flower-covered arch with lanterns, looking out over a lake at sunset">
+        <picture>
+          <!-- Phones get the full-height scene; wider screens a version with some empty sky removed -->
+          <source media="(max-width: 760px)" srcset="assets/images/hero-scene-tall.jpg">
+          <img class="hero__img" src="assets/images/hero-scene.jpg" fetchpriority="high"
+               alt="Namita and Kabir sitting together beneath a flower-covered arch with lanterns, looking out over a lake at sunset">
+        </picture>
 
         <canvas class="hero__petals" id="petals" aria-hidden="true"></canvas>
       </div>
@@ -147,33 +151,17 @@
       <img class="floral floral--br" src="assets/images/floral-br.jpg" alt="" aria-hidden="true">
     </section>
 
-    <!-- ===================== OUR STORY ===================== -->
-    <section class="section story" id="story">
-      <div class="container story__grid">
-        <div class="story__art">
-          <div class="story__frame">
-            <img src="assets/images/story-couple.jpg" alt="Illustration of Namita and Kabir sitting together">
-          </div>
-        </div>
-        <div class="story__text">
+    <!-- ===================== THE PROPOSAL ===================== -->
+    <section class="section proposal" id="proposal">
+      <div class="container container--narrow">
+        <div class="section__head">
           <svg class="motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
-          <h2>Our Story</h2>
-          <p class="lede">Two different worlds, one beautiful story.</p>
-
-          <div class="story__chapters">
-            <article>
-              <h3>How we met</h3>
-              <p>Every great story has a first chapter. Ours is still being written down, and we'll share it here soon.</p>
-            </article>
-            <article>
-              <h3>The proposal</h3>
-              <p>A question, a yes, and a whole lot of happy tears. Check back for the full story.</p>
-            </article>
-            <article>
-              <h3>What's next</h3>
-              <p>Three days in Bengaluru with the people we love most. We hope you'll be there to celebrate with us.</p>
-            </article>
-          </div>
+          <h2>The Proposal</h2>
+          <p class="lede">She said yes.</p>
+        </div>
+        <div class="proposal__frame">
+          <img src="assets/images/proposal.jpg" loading="lazy"
+               alt="Kabir on one knee proposing to Namita on a candlelit terrace above the sea, beneath a heart of lights that reads 'Will you marry me?'">
         </div>
       </div>
     </section>

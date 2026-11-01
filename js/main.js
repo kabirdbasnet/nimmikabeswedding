@@ -655,7 +655,7 @@ startPetals(document.getElementById("rsvp-petals"), ROSE_PETALS.concat(RED_PETAL
 /* ---------- Reveal on scroll ---------- */
 (function () {
   const targets = document.querySelectorAll(
-    ".section__head, .arch, .story__art, .story__text, .event, .card, .faq-list, .rsvp__frame"
+    ".section__head, .arch, .proposal__frame, .event, .card, .faq-list, .rsvp__frame"
   );
   if (!("IntersectionObserver" in window)) return;
   targets.forEach((t) => t.classList.add("reveal"));

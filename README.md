@@ -64,7 +64,8 @@ The pictures in `assets/images/` were cropped from the design mockup, so they ar
 | `corner-left.jpg`, `corner-right.jpg` | Bougainvillea and lanterns used by the opening flower curtain |
 | `arch-haldi.jpg`, `arch-sangeet.jpg`, `arch-wedding.jpg` | The three arch cards in "Our Wedding Weekend" |
 | `ev-haldi.jpg`, `ev-sangeet.jpg`, `ev-wedding.jpg` | Thumbnails in the Events list |
-| `story-couple.jpg` | "Our Story" illustration |
+| `proposal.jpg` | The proposal photo |
+| `hero-scene-tall.jpg` | Full-height version of the hero scene, used on phones |
 | `floral-bl.jpg`, `floral-br.jpg`, `rsvp-fl.jpg`, `rsvp-fr.jpg` | Lotus and foliage decorations |
 
 ## Preview locally
