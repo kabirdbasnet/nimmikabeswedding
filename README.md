@@ -9,12 +9,12 @@ A single-page save-the-date website. Plain HTML, CSS and JavaScript, no build st
 3. Under **Build and deployment**, set *Source* to **Deploy from a branch**, pick **main** and **/ (root)**, then save.
 4. After a minute the site is live at `https://kabirdbasnet.github.io/nimmikabeswedding/`.
 
-## Custom domain: nkaura2027.com
+## Custom domain: nkaura2027.party
 
 The site uses only relative paths, so it works unchanged at the root of a domain.
 
-1. **Buy `nkaura2027.com`** at any registrar (Cloudflare Registrar and Porkbun sell at cost; Namecheap and GoDaddy are fine too).
-2. **Add these DNS records** at the registrar (delete any placeholder A / CNAME records that point elsewhere first):
+1. The domain is registered at **Cloudflare Registrar**, so DNS is managed in the Cloudflare dashboard (**DNS → Records**).
+2. **Add these DNS records** (delete any placeholder A / CNAME records first):
 
    | Type | Host / Name | Value |
    | --- | --- | --- |
@@ -29,10 +29,10 @@ The site uses only relative paths, so it works unchanged at the root of a domain
    | CNAME | `www` | `kabirdbasnet.github.io` |
 
    On Cloudflare set each record to **DNS only** (grey cloud), not proxied.
-3. **Tell GitHub the domain**: add a file named `CNAME` at the repo root containing just `nkaura2027.com` and push, or enter it under **Settings → Pages → Custom domain**. Either way GitHub will run a DNS check.
+3. **Tell GitHub the domain**: add a file named `CNAME` at the repo root containing just `nkaura2027.party` and push, or enter it under **Settings → Pages → Custom domain**. Either way GitHub will run a DNS check.
 4. Once the check passes (minutes to a few hours), tick **Enforce HTTPS** on the same page. GitHub issues the certificate for free.
 
-After that both `https://nkaura2027.com` and `https://www.nkaura2027.com` serve the site, and the old `github.io` address redirects to it.
+After that both `https://nkaura2027.party` and `https://www.nkaura2027.party` serve the site, and the old `github.io` address redirects to it.
 
 ## Edit the content
 
