@@ -623,13 +623,19 @@ function startPetals(canvas, PALETTE) {
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const prevH = H;
     W = hero.clientWidth; H = hero.clientHeight;
+    if (canvas.width === Math.round(W * dpr) && canvas.height === Math.round(H * dpr) && petals.length) return;
     canvas.width = W * dpr; canvas.height = H * dpr;
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const target = Math.max(14, Math.min(42, Math.round(W / 38)));
     while (petals.length < target) petals.push(make(true));
     petals.length = target;
+    // The first measurement can happen before the hero image has loaded, when the section is
+    // still (nearly) flat. Once it reaches its real height, spread the petals over all of it
+    // so they are already falling everywhere instead of all starting from the top edge.
+    if (H > prevH * 1.5) petals.forEach((p) => { p.x = Math.random() * W; p.y = Math.random() * H; });
   }
 
   function make(anywhere) {
@@ -704,6 +710,8 @@ function startPetals(canvas, PALETTE) {
 
   resize();
   window.addEventListener("resize", resize);
+  // Follow the section's own size too: it grows when its image loads, which fires no window resize.
+  if ("ResizeObserver" in window) new ResizeObserver(resize).observe(hero);
   document.addEventListener("visibilitychange", () => (document.hidden ? stop() : start()));
   if ("IntersectionObserver" in window) {
     new IntersectionObserver((en) => (en[0].isIntersecting ? start() : stop()), { threshold: 0 }).observe(hero);
