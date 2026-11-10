@@ -168,11 +168,21 @@ function joinNames(items) {
 
 /* ---------- Personalise the page to the signed-in guest ---------- */
 function applyInvite() {
+  const personalised = Boolean(window.NK_INVITE);
+  document.documentElement.classList.toggle("is-personalised", personalised);
+  // Before sign-in the page keeps its neutral wording and shows no events at all,
+  // so nothing behind the gate hints at how many celebrations exist.
+  if (!personalised) {
+    document.querySelectorAll("[data-event]").forEach((el) => { el.hidden = true; });
+    return;
+  }
+
   const evs = invitedEvents();
   const keys = evs.map((ev) => ev.key);
   const n = evs.length;
   const words = ["", "One", "Two", "Three"];
-  document.documentElement.classList.toggle("is-personalised", Boolean(window.NK_INVITE));
+  const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
   // Anything tagged data-event="haldi|sangeet|wedding" is shown only to guests invited to it.
   document.querySelectorAll("[data-event]").forEach((el) => {
@@ -180,30 +190,31 @@ function applyInvite() {
   });
   document.querySelectorAll("[data-dates]").forEach((el) => { el.textContent = dateRangeText(evs); });
 
-  const tagline = document.getElementById("hero-tagline");
-  if (tagline) tagline.innerHTML = (n === 1 ? "A day" : words[n] + " days") + " of love, culture<br>and celebration";
+  setHtml("hero-tagline", (n === 1 ? "A day" : words[n] + " days") + " of love, culture<br>and celebration");
 
-  const lede = document.getElementById("events-lede");
-  if (lede) lede.innerHTML = n === 1
+  setText("nav-events", n === 1 ? "Event" : "Events");
+  setText("weekend-heading", n === 1 ? "Our Celebration" : "Our Wedding Weekend");
+  setText("weekend-lede", "We can't wait to celebrate with our favourite people in the most special place. Join us for "
+    + (n === 1 ? "a day" : "a weekend") + " of colour, music, love and new beginnings.");
+  setText("ics-label", n === 1 ? "Save the date" : "Save our dates");
+
+  setText("events-heading", n === 1 ? "Event" : "Events");
+  setHtml("events-lede", n === 1
     ? "One day. One celebration.<br>A beautiful journey."
-    : words[n] + " days. " + words[n] + " celebrations.<br>One beautiful journey.";
+    : words[n] + " days. " + words[n] + " celebrations.<br>One beautiful journey.");
 
-  const faqDates = document.getElementById("faq-dates");
-  if (faqDates) {
-    const first = evs[0].date, last = evs[n - 1].date;
-    faqDates.textContent = (n === 1
-      ? "Your celebration is on " + fmtDay(first) + "."
-      : "Your celebrations begin on the morning of " + fmtDay(first) + " and wrap up on " + fmtDay(last) + ".")
-      + " We suggest arriving by " + fmtDay(shiftDate(first, -1)) + " and leaving on " + fmtDay(shiftDate(last, 1))
-      + " to enjoy everything without rushing.";
-  }
+  setText("travel-venue", n === 1 ? "The celebration takes place at Aura." : "All of your celebrations take place at Aura.");
 
-  const faqWear = document.getElementById("faq-wear");
-  if (faqWear) {
-    faqWear.textContent = (n > 1 ? "Each event has its own mood. " : "")
-      + evs.map((ev) => ev.title + ": " + ev.dress).join(" ")
-      + (n > 1 ? " Dress codes are also listed under each event above." : " The dress code is also listed under the event above.");
-  }
+  const first = evs[0].date, last = evs[n - 1].date;
+  setText("faq-dates", (n === 1
+    ? "Your celebration is on " + fmtDay(first) + "."
+    : "Your celebrations begin on " + fmtDay(first) + " and wrap up on " + fmtDay(last) + ".")
+    + " We suggest arriving by " + fmtDay(shiftDate(first, -1)) + " and leaving on " + fmtDay(shiftDate(last, 1))
+    + " to enjoy everything without rushing.");
+
+  setText("faq-wear", (n > 1 ? "Each event has its own mood. " : "")
+    + evs.map((ev) => ev.title + ": " + ev.dress).join(" ")
+    + (n > 1 ? " Dress codes are also listed under each event above." : " The dress code is also listed under the event above."));
 }
 applyInvite();
 
@@ -528,9 +539,7 @@ applyInvite();
     if (form.hidden) return;
 
     const invitedEvs = CONFIG.events.filter((ev) => invite.events.includes(ev.key));
-    greeting.textContent = invitedEvs.length === CONFIG.events.length
-      ? "You're invited to all three celebrations: " + joinNames(invitedEvs.map((e) => e.title)) + "."
-      : "You're invited to the " + joinNames(invitedEvs.map((e) => e.title)) + ".";
+    greeting.textContent = "You're invited to the " + joinNames(invitedEvs.map((e) => e.title)) + ".";
 
     // Pre-fill a previous reply from this browser.
     let previous = null;

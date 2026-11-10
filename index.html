@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Namita &amp; Kabir · Save the Date</title>
-  <meta name="description" content="Save the date: Namita & Kabir are getting married June 25–27, 2027 at Aura, Bengaluru. Three days of love, culture and celebration.">
+  <meta name="description" content="Save the date: Namita & Kabir are getting married in June 2027 at Aura, Bengaluru.">
   <meta property="og:title" content="Namita & Kabir · Save the Date">
-  <meta property="og:description" content="June 25–27, 2027 · Aura, Bengaluru. Three days of love, culture and celebration.">
+  <meta property="og:description" content="June 2027 · Aura, Bengaluru. Love, culture and celebration.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="assets/images/hero-scene.jpg">
   <meta name="theme-color" content="#f3e7dc">
@@ -60,7 +60,7 @@
       <nav class="nav__links" id="nav-links" aria-label="Main">
         <a href="#top">Home</a>
         <a href="#proposal">The Proposal</a>
-        <a href="#events">Events</a>
+        <a href="#events" id="nav-events">Events</a>
         <a href="#travel">Travel</a>
         <a href="#faq">FAQ</a>
         <a href="#rsvp" class="nav__links-cta">RSVP</a>
@@ -82,12 +82,12 @@
         <div class="hero__content">
           <p class="eyebrow">Save the Date</p>
           <h1 class="hero__names">Namita <span class="amp">&amp;</span> Kabir</h1>
-          <p class="hero__date" data-dates>June 25 – 27, 2027</p>
+          <p class="hero__date" data-dates>June 2027</p>
           <p class="hero__venue">Aura, Bengaluru</p>
           <div class="ornament" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="18" height="18"><use href="#motif"/></svg>
           </div>
-          <p class="hero__tagline" id="hero-tagline">Three days of love, culture<br>and celebration</p>
+          <p class="hero__tagline" id="hero-tagline">Love, culture<br>and celebration</p>
         </div>
 
         <picture>
@@ -119,7 +119,7 @@
         <span class="notice__rule" aria-hidden="true"></span>
         <svg class="notice__motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
         <span class="notice__rule" aria-hidden="true"></span>
-        <p class="notice__text">This is just the beginning. We'll keep adding details here, from timings and dress codes to travel tips and places to stay, as the celebrations draw closer. <em>Please check back now and then.</em></p>
+        <p class="notice__text">This is just the beginning. We'll keep adding details here, from timings and dress codes to travel tips and places to stay, as the date draws closer. <em>Please check back now and then.</em></p>
       </div>
     </aside>
 
@@ -128,8 +128,8 @@
       <div class="container">
         <div class="section__head">
           <svg class="motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
-          <h2>Our Wedding Weekend</h2>
-          <p class="lede">We can't wait to celebrate with our favourite people in the most special place. Join us for a weekend of colour, music, love and new beginnings.</p>
+          <h2 id="weekend-heading">Our Celebration</h2>
+          <p class="lede" id="weekend-lede">We can't wait to celebrate with our favourite people in the most special place. Join us for colour, music, love and new beginnings.</p>
         </div>
 
         <div class="arches">
@@ -154,7 +154,7 @@
         </div>
 
         <div class="center">
-          <button class="btn btn--outline btn--lg js-ics" type="button">Save our dates <span class="arrow">→</span></button>
+          <button class="btn btn--outline btn--lg js-ics" type="button"><span id="ics-label">Save the date</span> <span class="arrow">→</span></button>
         </div>
       </div>
       <img class="floral floral--bl" src="assets/images/floral-bl.jpg" alt="" aria-hidden="true">
@@ -188,8 +188,8 @@
       <div class="container container--narrow">
         <div class="section__head">
           <svg class="motif" viewBox="0 0 24 24" aria-hidden="true"><use href="#motif"/></svg>
-          <h2>Events</h2>
-          <p class="lede" id="events-lede">Three days. Three celebrations.<br>One beautiful journey.</p>
+          <h2 id="events-heading">Event</h2>
+          <p class="lede" id="events-lede">One beautiful journey.</p>
         </div>
 
         <div class="event-list">
@@ -208,7 +208,7 @@
                 <div><dt>Venue</dt><dd>Aura, Bengaluru</dd></div>
                 <div><dt>Dress code</dt><dd>Bright, festive colours. Yellows and florals welcome.</dd></div>
               </dl>
-              <p>A relaxed, joyful day of turmeric, henna, music and lots of laughter to open the celebrations.</p>
+              <p>A relaxed, joyful day of turmeric, henna, music and lots of laughter.</p>
             </div>
           </article>
 
@@ -266,7 +266,7 @@
           <article class="card">
             <h3>The Venue</h3>
             <p><strong>Aura, Bengaluru</strong><br>Karnataka, India</p>
-            <p>All three celebrations take place at Aura. Full address and directions will be shared with your invitation.</p>
+            <p><span id="travel-venue">The celebration takes place at Aura.</span> Full address and directions will be shared with your invitation.</p>
             <a class="textlink" href="https://www.google.com/maps/search/Aura+Bengaluru" target="_blank" rel="noopener">Open in Google Maps →</a>
           </article>
           <article class="card">
@@ -277,7 +277,7 @@
           <article class="card">
             <h3>Where to Stay</h3>
             <p>We're arranging a block of rooms close to the venue for out-of-town guests. Details and booking codes are on their way.</p>
-            <p>If you'd like to book early, hotels in Bengaluru's central neighbourhoods are a good base for the weekend.</p>
+            <p>If you'd like to book early, hotels in Bengaluru's central neighbourhoods are a good base for your stay.</p>
           </article>
         </div>
       </div>
@@ -295,11 +295,11 @@
         <div class="faq-list">
           <details>
             <summary>When should I arrive and leave?</summary>
-            <p id="faq-dates">Celebrations begin on the morning of June 25 and wrap up after the wedding on June 27. We suggest arriving by June 24 and leaving on June 28 to enjoy everything without rushing.</p>
+            <p id="faq-dates">The dates are on your invitation. We suggest arriving the day before and leaving the day after to enjoy everything without rushing.</p>
           </details>
           <details>
             <summary>What should I wear?</summary>
-            <p id="faq-wear">Each event has its own mood. Bright festive colours for Haldi &amp; Mehendi, glamorous evening wear for the Sangeet, and traditional formal for the wedding. Dress codes are listed under each event above.</p>
+            <p id="faq-wear">The dress code is listed under the event above.</p>
           </details>
           <details>
             <summary>Can I bring a plus one?</summary>
@@ -364,7 +364,7 @@
 
   <footer class="footer">
     <p class="footer__names">Namita <span class="amp">&amp;</span> Kabir</p>
-    <p><span data-dates>June 25 – 27, 2027</span> · Aura, Bengaluru</p>
+    <p><span data-dates>June 2027</span> · Aura, Bengaluru</p>
     <p class="footer__small">Made with love. <a href="#top">Back to top ↑</a></p>
   </footer>
 
