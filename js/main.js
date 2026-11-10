@@ -41,7 +41,7 @@ const CONFIG = {
      Google Apps Script web-app URL (see rsvp-backend/README.md). Replies land in a Google Sheet,
      and the script checks the password again on its side before saving.
      Leave empty until it's deployed: the form then runs in preview mode and saves nothing. */
-  rsvpEndpoint: "",
+  rsvpEndpoint: "https://script.google.com/macros/s/AKfycbwL-KCH5LhcXtcMqx34sgA9gbKaEukkqPysu3U8l1PesWRh7JCF-pYHHI1vTEAWvnT4/exec",
 
   // While rsvpEndpoint is empty, let the live site show the RSVP form in preview mode too
   // (nothing is saved). Set to false, or connect the sheet, before sharing the link with guests.
